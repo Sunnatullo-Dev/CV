@@ -276,7 +276,7 @@ export const PortfolioWizard = ({
 
       {/* Floating AI Assistant FAB */}
       {currentStep >= 0 && (
-        <div className="fixed bottom-24 right-4 z-50 md:bottom-8 md:right-8">
+        <div className="fixed bottom-24 right-4 z-50 hidden md:block md:bottom-8 md:right-8">
           <motion.button
             whileHover={{ y: -2 }}
             whileTap={{ scale: 0.98 }}
@@ -486,7 +486,7 @@ const PersonalInfoStep = ({ user, setUser }: { user: User; setUser: React.Dispat
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-center gap-6 mb-2 bg-slate-50/50 p-6 rounded-3xl border border-slate-100">
-        <div className="relative group shrink-0">
+        <div className="relative group flex w-28 shrink-0 justify-center">
           <div className="w-24 h-24 rounded-3xl bg-indigo-100 border-4 border-white shadow-xl flex items-center justify-center overflow-hidden">
             {user.avatarUrl ? (
               <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
@@ -494,7 +494,7 @@ const PersonalInfoStep = ({ user, setUser }: { user: User; setUser: React.Dispat
               <FileUser size={40} className="text-indigo-400" />
             )}
           </div>
-          <label className="absolute -bottom-2 -right-2 bg-indigo-600 text-white p-2 rounded-xl shadow-lg border-2 border-white cursor-pointer hover:bg-indigo-700 transition-colors">
+          <label className="absolute bottom-0 right-2 bg-indigo-600 text-white p-2 rounded-xl shadow-lg border-2 border-white cursor-pointer hover:bg-indigo-700 transition-colors">
             <input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} />
             <Download size={14} className="rotate-180" />
           </label>

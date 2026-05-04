@@ -141,8 +141,8 @@ export const Dashboard = ({
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 md:px-6 md:py-8">
-      <section className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
-        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+      <section className="grid min-w-0 gap-6 lg:grid-cols-[1.25fr_0.75fr]">
+        <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-6 shadow-sm md:p-8">
           <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
             <div className="flex min-w-0 flex-col gap-4 sm:flex-row">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-900 text-2xl font-bold text-white shadow-sm">
@@ -207,7 +207,7 @@ export const Dashboard = ({
           </div>
         </div>
 
-        <aside className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <aside className="min-w-0 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-5 flex items-center justify-between">
             <div>
               <h2 className="text-base font-semibold text-slate-950">Tayyorlik nazorati</h2>
@@ -242,8 +242,8 @@ export const Dashboard = ({
         </aside>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="grid min-w-0 gap-6 lg:grid-cols-[0.85fr_1.15fr]">
+        <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-5 flex items-start justify-between gap-4">
             <div>
               <h2 className="text-base font-semibold text-slate-950">GitHub signali</h2>
@@ -313,7 +313,7 @@ export const Dashboard = ({
           )}
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-5 flex items-center justify-between">
             <div>
               <h2 className="text-base font-semibold text-slate-950">Keyingi professional qadamlar</h2>
@@ -351,8 +351,8 @@ export const Dashboard = ({
         </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
-        <div className="rounded-lg border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
+      <section className="grid min-w-0 gap-6 lg:grid-cols-[1fr_0.8fr]">
+        <div className="min-w-0 rounded-lg border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="mb-2 inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-slate-300">
@@ -383,7 +383,7 @@ export const Dashboard = ({
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-4 flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
               <UserRound size={19} />

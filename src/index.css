@@ -46,6 +46,22 @@
     font: inherit;
   }
 
+  .portfolio-preview-shell h1,
+  .portfolio-preview-shell h2,
+  .portfolio-preview-shell h3,
+  .portfolio-preview-shell p,
+  .resume-page h2,
+  .resume-page h3,
+  .resume-page h4,
+  .resume-page p,
+  .resume-page a {
+    overflow-wrap: anywhere;
+  }
+
+  .portfolio-preview-shell img {
+    max-width: 100%;
+  }
+
   .custom-scrollbar::-webkit-scrollbar {
     width: 4px;
   }

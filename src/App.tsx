@@ -94,12 +94,12 @@ export default function App() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#f6f8fb] text-slate-950">
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 md:px-6">
-          <button onClick={() => handleNavigate('dashboard')} className="flex items-center gap-3 text-left">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-4 md:px-6">
+          <button onClick={() => handleNavigate('dashboard')} className="flex min-w-0 items-center gap-3 text-left">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-950 text-sm font-bold text-white">
               DP
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-sm font-semibold leading-none text-slate-950">DevPort</p>
               <p className="mt-1 text-xs font-medium text-slate-500">{activeTitle}</p>
             </div>
@@ -149,7 +149,7 @@ export default function App() {
         )}
 
         {view === 'preview' && (
-          <div className="bg-white">
+          <div className="portfolio-preview-shell bg-white">
             <PortfolioPreview user={user} projects={projects} templateId={selectedTemplate} language={language} />
           </div>
         )}
@@ -159,7 +159,7 @@ export default function App() {
         )}
       </main>
 
-      <nav className="fixed inset-x-4 bottom-4 z-50 grid grid-cols-5 rounded-lg border border-slate-200 bg-white p-1 shadow-xl shadow-slate-900/10 md:hidden">
+      <nav className="fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-50 grid grid-cols-5 rounded-lg border border-slate-200 bg-white p-1 shadow-xl shadow-slate-900/10 md:hidden">
         {NAV_ITEMS.map((item) => (
           <NavButton
             key={item.id}
@@ -192,7 +192,7 @@ const NavButton = ({
       onClick={onClick}
       className={cn(
         'inline-flex min-w-0 items-center justify-center gap-2 rounded-md text-sm font-semibold transition',
-        compact ? 'h-12 flex-col gap-1 px-2 text-[11px]' : 'h-10 px-3',
+        compact ? 'h-12 flex-col gap-1 px-1 text-[10px]' : 'h-10 px-3',
         isActive ? 'bg-slate-950 text-white shadow-sm' : 'text-slate-600 hover:bg-white hover:text-slate-950',
       )}
     >
@@ -209,13 +209,13 @@ const LanguageToggle = ({
   language: AppLanguage;
   onChange: (language: AppLanguage) => void;
 }) => (
-  <div className="hidden items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 sm:flex">
+  <div className="flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
     {(Object.keys(LANGUAGE_LABELS) as AppLanguage[]).map((item) => (
       <button
         key={item}
         onClick={() => onChange(item)}
         className={cn(
-          'h-9 rounded-md px-3 text-xs font-bold transition',
+          'h-8 rounded-md px-2 text-[11px] font-bold transition sm:h-9 sm:px-3 sm:text-xs',
           language === item ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-500 hover:text-slate-900',
         )}
       >
