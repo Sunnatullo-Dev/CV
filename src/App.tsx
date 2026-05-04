@@ -6,19 +6,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { PortfolioPreview } from './components/preview/PortfolioPreview';
+import { ResumePreview } from './components/preview/ResumePreview';
 import { PortfolioWizard } from './components/wizard/PortfolioWizard';
 import { AppLanguage, Project, User } from './types';
 import { cn } from './lib/utils';
 import { LANGUAGE_LABELS } from './lib/resume';
-import { Edit3, Eye, Home, Sparkles } from 'lucide-react';
+import { Edit3, Eye, FileText, Home, Sparkles } from 'lucide-react';
 import { useTelegram } from './hooks/useTelegram';
 
-type AppView = 'dashboard' | 'wizard' | 'preview';
+type AppView = 'dashboard' | 'wizard' | 'preview' | 'resume';
 
 const NAV_ITEMS: Array<{ id: AppView | 'ai'; label: string; icon: React.ElementType }> = [
   { id: 'dashboard', label: 'Studio', icon: Home },
   { id: 'wizard', label: 'Builder', icon: Edit3 },
   { id: 'preview', label: 'Preview', icon: Eye },
+  { id: 'resume', label: 'CV', icon: FileText },
   { id: 'ai', label: 'AI CV', icon: Sparkles },
 ];
 
@@ -71,6 +73,7 @@ export default function App() {
   const activeTitle = useMemo(() => {
     if (view === 'wizard') return 'Portfolio builder';
     if (view === 'preview') return 'Live preview';
+    if (view === 'resume') return 'ATS CV preview';
     return 'Professional studio';
   }, [view]);
 
@@ -148,9 +151,13 @@ export default function App() {
             <PortfolioPreview user={user} projects={projects} templateId={selectedTemplate} language={language} />
           </div>
         )}
+
+        {view === 'resume' && (
+          <ResumePreview user={user} projects={projects} language={language} />
+        )}
       </main>
 
-      <nav className="fixed inset-x-4 bottom-4 z-50 grid grid-cols-4 rounded-lg border border-slate-200 bg-white p-1 shadow-xl shadow-slate-900/10 md:hidden">
+      <nav className="fixed inset-x-4 bottom-4 z-50 grid grid-cols-5 rounded-lg border border-slate-200 bg-white p-1 shadow-xl shadow-slate-900/10 md:hidden">
         {NAV_ITEMS.map((item) => (
           <NavButton
             key={item.id}

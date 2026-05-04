@@ -53,10 +53,10 @@ export const buildResumeData = (
     skills: skills.length ? skills : ['React', 'TypeScript', 'API Integration', 'Product Thinking'],
     experience: projects.slice(0, 4).map((project) => ({
       company: project.title,
-      role: FALLBACK_HEADLINE[language],
+      role: project.role || FALLBACK_HEADLINE[language],
       startDate: 'Project',
       endDate: 'Present',
-      description: project.description,
+      description: [project.description, project.impact].filter(Boolean).join(' '),
     })),
     education: [
       {
@@ -68,6 +68,8 @@ export const buildResumeData = (
     projects: projects.map((project) => ({
       title: project.title,
       description: project.description,
+      role: project.role,
+      impact: project.impact,
       tags: project.tags,
       url: project.url,
       repoUrl: project.repoUrl,

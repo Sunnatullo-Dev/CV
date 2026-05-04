@@ -60,3 +60,24 @@
     background: #cbd5e1;
   }
 }
+
+@media print {
+  @page {
+    margin: 14mm;
+    size: A4;
+  }
+
+  body {
+    background: #ffffff !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .ats-page {
+    max-width: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+}

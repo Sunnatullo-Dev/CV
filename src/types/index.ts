@@ -72,6 +72,8 @@ export interface Education {
 export interface ResumeProject {
   title: string;
   description: string;
+  role?: string;
+  impact?: string;
   tags: string[];
   url?: string;
   repoUrl?: string;
