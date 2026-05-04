@@ -1,3 +1,5 @@
+export type AppLanguage = 'uz' | 'en' | 'ru';
+
 export interface User {
   id: string;
   fullName: string;
@@ -39,10 +41,16 @@ export interface PortfolioConfig {
 }
 
 export interface ResumeData {
+  language: AppLanguage;
+  headline: string;
+  contactLinks: string[];
   summary: string;
   experience: Experience[];
   education: Education[];
   skills: string[];
+  projects: ResumeProject[];
+  languages: string[];
+  certifications: string[];
 }
 
 export interface Experience {
@@ -57,4 +65,12 @@ export interface Education {
   institution: string;
   degree: string;
   gradYear: string;
+}
+
+export interface ResumeProject {
+  title: string;
+  description: string;
+  tags: string[];
+  url?: string;
+  repoUrl?: string;
 }

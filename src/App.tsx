@@ -7,8 +7,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { PortfolioPreview } from './components/preview/PortfolioPreview';
 import { PortfolioWizard } from './components/wizard/PortfolioWizard';
-import { Project, User } from './types';
+import { AppLanguage, Project, User } from './types';
 import { cn } from './lib/utils';
+import { LANGUAGE_LABELS } from './lib/resume';
 import { Edit3, Eye, Home, Sparkles } from 'lucide-react';
 import { useTelegram } from './hooks/useTelegram';
 
@@ -25,6 +26,7 @@ export default function App() {
   const { tg, user: tgUser } = useTelegram();
   const [view, setView] = useState<AppView>('dashboard');
   const [selectedTemplate, setSelectedTemplate] = useState('minimalist');
+  const [language, setLanguage] = useState<AppLanguage>('uz');
   const [showAiModal, setShowAiModal] = useState(false);
 
   const [user, setUser] = useState<User>({
@@ -110,6 +112,8 @@ export default function App() {
               />
             ))}
           </nav>
+
+          <LanguageToggle language={language} onChange={setLanguage} />
         </div>
       </header>
 
@@ -133,6 +137,7 @@ export default function App() {
             onProjectsSynced={(syncedProjects) => setProjects(syncedProjects)}
             selectedTemplate={selectedTemplate}
             setSelectedTemplate={setSelectedTemplate}
+            language={language}
             isAiModalOpen={showAiModal}
             onAiModalClose={() => setShowAiModal(false)}
           />
@@ -140,7 +145,7 @@ export default function App() {
 
         {view === 'preview' && (
           <div className="bg-white">
-            <PortfolioPreview user={user} projects={projects} templateId={selectedTemplate} />
+            <PortfolioPreview user={user} projects={projects} templateId={selectedTemplate} language={language} />
           </div>
         )}
       </main>
@@ -187,3 +192,26 @@ const NavButton = ({
     </button>
   );
 };
+
+const LanguageToggle = ({
+  language,
+  onChange,
+}: {
+  language: AppLanguage;
+  onChange: (language: AppLanguage) => void;
+}) => (
+  <div className="hidden items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 sm:flex">
+    {(Object.keys(LANGUAGE_LABELS) as AppLanguage[]).map((item) => (
+      <button
+        key={item}
+        onClick={() => onChange(item)}
+        className={cn(
+          'h-9 rounded-md px-3 text-xs font-bold transition',
+          language === item ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-500 hover:text-slate-900',
+        )}
+      >
+        {LANGUAGE_LABELS[item]}
+      </button>
+    ))}
+  </div>
+);

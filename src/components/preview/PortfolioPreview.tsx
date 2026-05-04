@@ -1,5 +1,5 @@
 import React from "react";
-import { User, Project } from "../../types";
+import { AppLanguage, User, Project } from "../../types";
 import { Github, Globe, Mail, MapPin, ExternalLink, Linkedin, Twitter, MessageCircle, Rocket, ArrowRight, Terminal, Code2, Cpu, Zap, LayoutGrid, Monitor, Command, Hash, ChevronRight, CheckCircle2, FileText } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { motion } from "motion/react";
@@ -8,13 +8,14 @@ interface PreviewProps {
   user: User;
   projects: Project[];
   templateId?: string;
+  language?: AppLanguage;
 }
 
-export const PortfolioPreview = ({ user, projects, templateId = "minimalist" }: PreviewProps) => {
+export const PortfolioPreview = ({ user, projects, templateId = "minimalist", language = "uz" }: PreviewProps) => {
   const currentYear = new Date().getFullYear();
 
   if (projects.length === 0) {
-    return <EmptyPortfolioPreview user={user} templateId={templateId} currentYear={currentYear} />;
+    return <EmptyPortfolioPreview user={user} templateId={templateId} currentYear={currentYear} language={language} />;
   }
 
   switch (templateId) {
@@ -49,14 +50,14 @@ const TEMPLATE_LABELS: Record<string, string> = {
   serif: "Professional Serif",
 };
 
-const EmptyPortfolioPreview = ({ user, templateId, currentYear }: any) => (
+const EmptyPortfolioPreview = ({ user, templateId, currentYear, language }: any) => (
   <div className="min-h-screen bg-white text-slate-950">
     <header className="border-b border-slate-200">
       <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 md:grid-cols-[1.1fr_0.9fr] md:items-end md:py-24">
         <div>
           <p className="mb-5 inline-flex items-center gap-2 rounded-md border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-emerald-700">
             <CheckCircle2 size={14} />
-            {TEMPLATE_LABELS[templateId] || "Professional template"}
+            {TEMPLATE_LABELS[templateId] || "Professional template"} / {String(language).toUpperCase()}
           </p>
           <h1 className="max-w-4xl text-4xl font-semibold tracking-normal text-slate-950 md:text-6xl">
             {user.fullName || "Your Name"}

@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { User, Project } from "../types";
+import { AppLanguage, User, Project } from "../types";
 
 const getAiClient = () => {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -12,7 +12,13 @@ const fallbackTips = [
   "GitHub, LinkedIn va shaxsiy sayt linklarini to'ldiring. Ishonch signallari portfolio konversiyasini oshiradi."
 ];
 
-const generateFallbackCv = (user: User, projects: Project[]) => {
+const CV_LANGUAGE_NAMES: Record<AppLanguage, string> = {
+  uz: "o'zbek",
+  en: "English",
+  ru: "Russian",
+};
+
+const generateFallbackCv = (user: User, projects: Project[], language: AppLanguage = "uz") => {
   const socialLinks = user.socialLinks || {};
   const allTags = Array.from(new Set(projects.flatMap((project) => project.tags))).filter(Boolean);
   const links = [
@@ -27,7 +33,49 @@ const generateFallbackCv = (user: User, projects: Project[]) => {
     )).join("\n\n")
     : "- GitHub loyihalari import qilingandan keyin bu bo'lim real case studylar bilan to'ldiriladi.";
 
-  return `# ${user.fullName || "Professional Developer"}\n${links || "Aloqa linklari: GitHub, LinkedIn va shaxsiy sayt qo'shiladi."}\n\n## Professional xulosa\n${user.bio || "Natijaga yo'naltirilgan developer. Murakkab biznes talablarini aniq, ishonchli va kengayadigan raqamli mahsulotlarga aylantirishga ixtisoslashgan."}\n\n## Texnik ko'nikmalar\n${allTags.length ? allTags.map((tag) => `- ${tag}`).join("\n") : "- Frontend development\n- Backend/API integration\n- Product thinking\n- GitHub workflow"}\n\n## Tanlangan loyihalar\n${projectLines}\n\n## Ish uslubi\n- Talablarni tez tushunish, prioritetlash va aniq texnik yechimga aylantirish.\n- Kod sifati, o'qilishi va keyinchalik kengaytirishga e'tibor berish.\n- Natijani foydalanuvchi tajribasi va biznes qiymati bilan bog'lash.`;
+  const sections = {
+    uz: {
+      links: "Aloqa linklari: GitHub, LinkedIn va shaxsiy sayt qo'shiladi.",
+      summary: "Professional xulosa",
+      skills: "Texnik ko'nikmalar",
+      projects: "Tanlangan loyihalar",
+      workStyle: "Ish uslubi",
+      fallbackSummary: "Natijaga yo'naltirilgan developer. Murakkab biznes talablarini aniq, ishonchli va kengayadigan raqamli mahsulotlarga aylantirishga ixtisoslashgan.",
+      bullets: [
+        "Talablarni tez tushunish, prioritetlash va aniq texnik yechimga aylantirish.",
+        "Kod sifati, o'qilishi va keyinchalik kengaytirishga e'tibor berish.",
+        "Natijani foydalanuvchi tajribasi va biznes qiymati bilan bog'lash.",
+      ],
+    },
+    en: {
+      links: "Contact links: GitHub, LinkedIn, and personal website will be added.",
+      summary: "Professional Summary",
+      skills: "Technical Skills",
+      projects: "Selected Projects",
+      workStyle: "Working Style",
+      fallbackSummary: "Results-driven developer focused on turning complex business requirements into reliable, scalable digital products.",
+      bullets: [
+        "Translate requirements into clear technical solutions quickly.",
+        "Prioritize readable, maintainable, and scalable code.",
+        "Connect delivery quality with user experience and business value.",
+      ],
+    },
+    ru: {
+      links: "Контактные ссылки: GitHub, LinkedIn и личный сайт будут добавлены.",
+      summary: "Профессиональное резюме",
+      skills: "Технические навыки",
+      projects: "Избранные проекты",
+      workStyle: "Подход к работе",
+      fallbackSummary: "Разработчик, ориентированный на результат: превращаю сложные бизнес-задачи в надежные и масштабируемые цифровые продукты.",
+      bullets: [
+        "Быстро превращаю требования в понятные технические решения.",
+        "Делаю акцент на читаемом, поддерживаемом и масштабируемом коде.",
+        "Связываю качество реализации с пользовательским опытом и бизнес-ценностью.",
+      ],
+    },
+  }[language];
+
+  return `# ${user.fullName || "Professional Developer"}\n${links || sections.links}\n\n## ${sections.summary}\n${user.bio || sections.fallbackSummary}\n\n## ${sections.skills}\n${allTags.length ? allTags.map((tag) => `- ${tag}`).join("\n") : "- Frontend development\n- Backend/API integration\n- Product thinking\n- GitHub workflow"}\n\n## ${sections.projects}\n${projectLines}\n\n## ${sections.workStyle}\n${sections.bullets.map((bullet) => `- ${bullet}`).join("\n")}`;
 };
 
 export const getPortfolioRecommendations = async (user: User, projects: Project[]) => {
@@ -65,10 +113,10 @@ export const getPortfolioRecommendations = async (user: User, projects: Project[
   }
 };
 
-export const generateAiCV = async (user: User, projects: Project[]) => {
+export const generateAiCV = async (user: User, projects: Project[], language: AppLanguage = "uz") => {
   try {
     const ai = getAiClient();
-    if (!ai) return generateFallbackCv(user, projects);
+    if (!ai) return generateFallbackCv(user, projects, language);
 
     const socialLinks = user.socialLinks || {};
     const linksList = [
@@ -99,7 +147,7 @@ export const generateAiCV = async (user: User, projects: Project[]) => {
         Ijtimoiy tarmoqlar: ${linksList}
         Loyihalar: ${projects.map(p => `${p.title}: ${p.description} (Texnologiyalar: ${p.tags.join(", ")})`).join("; ")}
         
-        CV o'zbek tilida, Markdown formatida, aniq, rekruterga tayyor va natijaga yo'naltirilgan professional uslubda bo'lsin.
+        CV ${CV_LANGUAGE_NAMES[language]} tilida, Markdown formatida, aniq, rekruterga tayyor va natijaga yo'naltirilgan professional uslubda bo'lsin.
       `,
     });
 

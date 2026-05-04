@@ -4,7 +4,7 @@ import { Button } from "../shared/Button";
 import { ChevronRight, ChevronLeft, Github, Layout, CheckCircle, FileText, Loader2, Rocket, Linkedin, Twitter, Globe, ArrowUp, ArrowDown, Terminal, Sparkles, BrainCircuit, Lightbulb, Info, FileJson, FileUser, Copy, Download, Cpu } from "lucide-react";
 import axios from "axios";
 import { cn } from "../../lib/utils";
-import { User, Project } from "../../types";
+import { AppLanguage, User, Project } from "../../types";
 import { getPortfolioRecommendations, generateAiCV } from "../../services/aiService";
 import Markdown from "react-markdown";
 
@@ -22,6 +22,7 @@ interface WizardProps {
   onProjectsSynced: (projects: Project[]) => void;
   selectedTemplate: string;
   setSelectedTemplate: (id: string) => void;
+  language: AppLanguage;
   isAiModalOpen?: boolean;
   onAiModalClose?: () => void;
 }
@@ -33,6 +34,7 @@ export const PortfolioWizard = ({
   onProjectsSynced, 
   selectedTemplate, 
   setSelectedTemplate,
+  language,
   isAiModalOpen = false,
   onAiModalClose
 }: WizardProps) => {
@@ -54,6 +56,10 @@ export const PortfolioWizard = ({
     }
   }, [isAiModalOpen]);
 
+  useEffect(() => {
+    setCvContent(null);
+  }, [language]);
+
   const handleCloseModal = () => {
     setShowAiModal(false);
     if (onAiModalClose) onAiModalClose();
@@ -62,7 +68,7 @@ export const PortfolioWizard = ({
   const fetchAiCV = async () => {
     setIsGeneratingCv(true);
     try {
-      const cv = await generateAiCV(user, projects);
+      const cv = await generateAiCV(user, projects, language);
       setCvContent(cv);
     } catch (err) {
       console.error(err);
