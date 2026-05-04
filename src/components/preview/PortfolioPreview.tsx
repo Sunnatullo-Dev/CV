@@ -20,6 +20,12 @@ export const PortfolioPreview = ({ user, projects, templateId = "minimalist", la
   }
 
   switch (templateId) {
+    case "premium-developer":
+      return <PremiumDeveloperLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
+    case "case-study-pro":
+      return <CaseStudyProLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
+    case "executive-architect":
+      return <ExecutiveArchitectLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
     case "modern-minimalist":
       return <ModernMinimalistLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
     case "modern-technical":
@@ -41,6 +47,9 @@ export const PortfolioPreview = ({ user, projects, templateId = "minimalist", la
 };
 
 const TEMPLATE_LABELS: Record<string, string> = {
+  "premium-developer": "Premium Developer",
+  "case-study-pro": "Case Study Pro",
+  "executive-architect": "Executive Architect",
   "modern-minimalist": "Modern Minimalist",
   "modern-technical": "Modern Technical",
   minimalist: "Minimalist Persona",
@@ -151,6 +160,218 @@ const EmptyChecklistItem = ({ done, label }: { done: boolean; label: string }) =
     <span className={done ? "font-semibold text-emerald-700" : "font-semibold text-slate-400"}>
       {done ? "Tayyor" : "Kerak"}
     </span>
+  </div>
+);
+
+const PremiumDeveloperLayout = ({ user, projects, currentYear }: any) => (
+  <div className="min-h-screen bg-[#f7f8fb] text-slate-950">
+    <header className="border-b border-slate-200 bg-white">
+      <div className="mx-auto grid max-w-7xl gap-10 px-6 py-16 md:grid-cols-[1.05fr_0.95fr] md:items-center md:py-24">
+        <div>
+          <p className="mb-5 inline-flex items-center gap-2 rounded-md border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-widest text-blue-700">
+            <CheckCircle2 size={14} />
+            Available for product work
+          </p>
+          <h1 className="max-w-4xl text-4xl font-semibold leading-tight tracking-normal md:text-7xl">
+            {user.fullName || "Professional Developer"}
+          </h1>
+          <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
+            {user.bio}
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            {user.githubUsername && (
+              <a href={`https://github.com/${user.githubUsername}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-slate-950 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800">
+                <Github size={17} />
+                GitHub
+              </a>
+            )}
+            {user.socialLinks?.linkedin && (
+              <a href={user.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:text-blue-700">
+                <Linkedin size={17} />
+                LinkedIn
+              </a>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-slate-950 p-5 shadow-2xl shadow-slate-300/60">
+          <div className="mb-4 flex items-center justify-between text-xs font-semibold uppercase tracking-widest text-slate-400">
+            <span>Portfolio signal</span>
+            <span>{projects.length} projects</span>
+          </div>
+          <div className="grid gap-3">
+            {projects.slice(0, 3).map((project: any) => (
+              <div key={project.id} className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h3 className="truncate text-sm font-semibold text-white">{project.title}</h3>
+                  <ExternalLink size={15} className="text-blue-300" />
+                </div>
+                <p className="line-clamp-2 text-sm leading-6 text-slate-400">{project.impact || project.description}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {project.tags.slice(0, 3).map((tag: string) => (
+                    <span key={tag} className="rounded-md bg-white/10 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-300">{tag}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main className="mx-auto max-w-7xl px-6 py-16">
+      <div className="mb-10 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-blue-700">Selected work</p>
+          <h2 className="mt-2 text-3xl font-semibold tracking-normal">Projects built with clarity and outcome.</h2>
+        </div>
+        <p className="max-w-xl text-sm leading-6 text-slate-500">Each project highlights problem solving, technical execution, and measurable value.</p>
+      </div>
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        {projects.map((project: any) => (
+          <a key={project.id} href={project.url || project.repoUrl} target="_blank" rel="noopener noreferrer" className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-100/60">
+            <div className="mb-5 aspect-[16/10] overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+              {project.image ? (
+                <img src={project.image} alt={project.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+              ) : (
+                <div className="flex h-full items-center justify-center bg-gradient-to-br from-slate-100 to-blue-50 text-blue-600">
+                  <Monitor size={38} />
+                </div>
+              )}
+            </div>
+            <p className="text-xs font-bold uppercase tracking-widest text-blue-700">{project.role || "Case study"}</p>
+            <h3 className="mt-2 text-xl font-semibold text-slate-950">{project.title}</h3>
+            <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">{project.description}</p>
+            {project.impact && <p className="mt-3 text-sm font-semibold leading-6 text-slate-800">{project.impact}</p>}
+          </a>
+        ))}
+      </div>
+    </main>
+
+    <footer className="border-t border-slate-200 px-6 py-8 text-center text-xs font-bold uppercase tracking-widest text-slate-400">
+      {user.fullName} / {currentYear}
+    </footer>
+  </div>
+);
+
+const CaseStudyProLayout = ({ user, projects, currentYear }: any) => (
+  <div className="min-h-screen bg-[#fffdf7] text-[#151515]">
+    <header className="mx-auto max-w-6xl px-6 py-16 md:py-24">
+      <div className="max-w-4xl">
+        <p className="mb-5 text-xs font-bold uppercase tracking-[0.28em] text-amber-700">Case study portfolio</p>
+        <h1 className="text-5xl font-semibold leading-tight tracking-normal md:text-7xl">{user.fullName || "Product Builder"}</h1>
+        <p className="mt-6 max-w-3xl text-xl leading-9 text-stone-600">{user.bio}</p>
+      </div>
+      <div className="mt-12 grid gap-4 border-y border-stone-200 py-6 md:grid-cols-3">
+        <Stat label="Selected cases" value={projects.length} />
+        <Stat label="Primary focus" value="Product delivery" />
+        <Stat label="Stack signal" value={Array.from(new Set(projects.flatMap((p: any) => p.tags))).slice(0, 3).join(" / ") || "Full-stack"} />
+      </div>
+    </header>
+
+    <main className="mx-auto max-w-6xl px-6 pb-20">
+      <div className="space-y-8">
+        {projects.map((project: any, index: number) => (
+          <article key={project.id} className="grid gap-6 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm md:grid-cols-[0.8fr_1.2fr] md:p-7">
+            <div className="overflow-hidden rounded-xl border border-stone-200 bg-stone-100">
+              {project.image ? (
+                <img src={project.image} alt={project.title} className="h-full min-h-[260px] w-full object-cover" />
+              ) : (
+                <div className="flex min-h-[260px] items-center justify-center bg-stone-950 text-amber-300">
+                  <span className="text-6xl font-semibold">{String(index + 1).padStart(2, "0")}</span>
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.24em] text-amber-700">Case {index + 1} / {project.role || "Project"}</p>
+                <h2 className="mt-3 text-3xl font-semibold tracking-normal md:text-4xl">{project.title}</h2>
+                <p className="mt-5 text-base leading-8 text-stone-600">{project.description}</p>
+                {project.impact && (
+                  <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold leading-7 text-stone-800">
+                    {project.impact}
+                  </div>
+                )}
+              </div>
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-wrap gap-2">
+                  {project.tags.map((tag: string) => (
+                    <span key={tag} className="rounded-full border border-stone-200 px-3 py-1 text-xs font-semibold text-stone-600">{tag}</span>
+                  ))}
+                </div>
+                <a href={project.url || project.repoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-bold text-stone-950 hover:text-amber-700">
+                  View project <ArrowRight size={16} />
+                </a>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </main>
+
+    <footer className="border-t border-stone-200 px-6 py-8 text-center text-xs font-bold uppercase tracking-widest text-stone-400">
+      Case studies / {currentYear}
+    </footer>
+  </div>
+);
+
+const ExecutiveArchitectLayout = ({ user, projects, currentYear }: any) => (
+  <div className="min-h-screen bg-[#f4f1ec] text-[#191714]">
+    <header className="mx-auto max-w-7xl px-6 py-16 md:py-24">
+      <div className="grid gap-10 md:grid-cols-[0.85fr_1.15fr] md:items-end">
+        <div className="rounded-2xl border border-stone-300 bg-[#191714] p-6 text-white">
+          <p className="text-xs font-bold uppercase tracking-[0.28em] text-stone-400">Executive profile</p>
+          <div className="mt-10 space-y-4">
+            <Stat label="Portfolio projects" value={projects.length} dark />
+            <Stat label="Delivery style" value="Architecture / Product" dark />
+            <Stat label="Availability" value="Selective engagements" dark />
+          </div>
+        </div>
+        <div>
+          <p className="mb-5 text-xs font-bold uppercase tracking-[0.28em] text-stone-500">Solution architect portfolio</p>
+          <h1 className="text-5xl font-semibold leading-tight tracking-normal md:text-7xl">{user.fullName || "Solution Architect"}</h1>
+          <p className="mt-6 max-w-3xl text-lg leading-8 text-stone-600">{user.bio}</p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            {user.githubUsername && <a href={`https://github.com/${user.githubUsername}`} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-[#191714] px-5 py-3 text-sm font-semibold text-white">GitHub</a>}
+            {user.socialLinks?.website && <a href={user.socialLinks.website} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-800">Website</a>}
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main className="mx-auto max-w-7xl px-6 pb-20">
+      <div className="grid gap-5 md:grid-cols-2">
+        {projects.map((project: any) => (
+          <article key={project.id} className="rounded-2xl border border-stone-300 bg-[#fbfaf7] p-7">
+            <div className="mb-8 flex items-start justify-between gap-6">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-stone-500">{project.role || "Architecture case"}</p>
+                <h2 className="mt-3 text-2xl font-semibold tracking-normal">{project.title}</h2>
+              </div>
+              <Cpu className="shrink-0 text-stone-400" size={24} />
+            </div>
+            <p className="text-sm leading-7 text-stone-600">{project.description}</p>
+            {project.impact && <p className="mt-5 border-l-2 border-stone-900 pl-4 text-sm font-semibold leading-7 text-stone-900">{project.impact}</p>}
+            <div className="mt-7 flex flex-wrap gap-2">
+              {project.tags.map((tag: string) => (
+                <span key={tag} className="rounded-md bg-stone-100 px-2.5 py-1 text-xs font-bold text-stone-600">{tag}</span>
+              ))}
+            </div>
+          </article>
+        ))}
+      </div>
+    </main>
+
+    <footer className="border-t border-stone-300 px-6 py-8 text-center text-xs font-bold uppercase tracking-widest text-stone-500">
+      Strategy / Systems / Delivery / {currentYear}
+    </footer>
+  </div>
+);
+
+const Stat = ({ label, value, dark = false }: { label: string; value: any; dark?: boolean }) => (
+  <div>
+    <p className={cn("text-xs font-bold uppercase tracking-[0.2em]", dark ? "text-stone-500" : "text-stone-400")}>{label}</p>
+    <p className={cn("mt-2 text-lg font-semibold", dark ? "text-white" : "text-stone-900")}>{value || "Ready"}</p>
   </div>
 );
 

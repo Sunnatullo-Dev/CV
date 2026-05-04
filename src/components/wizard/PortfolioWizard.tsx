@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "../shared/Button";
-import { ChevronRight, ChevronLeft, Github, Layout, CheckCircle, FileText, Loader2, Rocket, Linkedin, Twitter, Globe, ArrowUp, ArrowDown, Terminal, Sparkles, BrainCircuit, Lightbulb, Info, FileJson, FileUser, Copy, Download, Cpu, Edit3, Save, X } from "lucide-react";
+import { ChevronRight, ChevronLeft, Github, Layout, CheckCircle, FileText, Loader2, Rocket, Linkedin, Twitter, Globe, ArrowUp, ArrowDown, Terminal, Sparkles, BrainCircuit, Lightbulb, Info, FileJson, FileUser, Copy, Download, Cpu, Edit3, Save, X, Monitor } from "lucide-react";
 import axios from "axios";
 import { cn } from "../../lib/utils";
 import { AppLanguage, User, Project } from "../../types";
@@ -892,6 +892,18 @@ const ProjectField = ({ label, children }: { label: string; children: React.Reac
 );
 
 const TEMPLATE_DETAILS: Record<string, { philosophy: string; features: string[] }> = {
+  'premium-developer': {
+    philosophy: "Premium developer portfolio. Ish beruvchi birinchi ekranda positioning, signal va tanlangan loyihalarni ko'radi.",
+    features: ["Premium hero", "Project signal panel", "Clean cards", "Recruiter-friendly layout"]
+  },
+  'case-study-pro': {
+    philosophy: "Case studyga asoslangan shablon. Har bir loyiha muammo, yechim va natija sifatida ko'rsatiladi.",
+    features: ["Large case cards", "Impact bloklari", "Storytelling layout", "Product builder uslubi"]
+  },
+  'executive-architect': {
+    philosophy: "Senior developer, solution architect va consultantlar uchun sokin, nufuzli va premium ko'rinish.",
+    features: ["Executive profile", "Architecture signal", "Minimal ranglar", "Premium typography"]
+  },
   'modern-minimalist': {
     philosophy: "Tozalik va fokus. Ortiqcha detallarsiz faqat muhim ma'lumotlarga qaratilgan zamonaviy yondashuv.",
     features: ["Keng bo'shliqlar", "Yupqa chiziqlar", "Oq/Kulrang ranglar palitrasi", "Minimalistik animatsiyalar"]
@@ -927,6 +939,27 @@ const TEMPLATE_DETAILS: Record<string, { philosophy: string; features: string[] 
 };
 
 const PROFESSIONAL_TEMPLATES = [
+  {
+    id: 'premium-developer',
+    name: 'Premium Developer',
+    audience: 'Modern developer portfolio',
+    icon: Monitor,
+    tone: 'blue',
+  },
+  {
+    id: 'case-study-pro',
+    name: 'Case Study Pro',
+    audience: 'Product and project storytelling',
+    icon: FileJson,
+    tone: 'amber',
+  },
+  {
+    id: 'executive-architect',
+    name: 'Executive Architect',
+    audience: 'Senior, architect, consultant',
+    icon: Cpu,
+    tone: 'slate',
+  },
   {
     id: 'minimalist',
     name: 'Minimalist Persona',
