@@ -75,9 +75,15 @@
     display: none !important;
   }
 
+  .resume-page,
   .ats-page {
     max-width: none !important;
     box-shadow: none !important;
     padding: 0 !important;
+  }
+
+  .resume-page {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 }
