@@ -9,25 +9,25 @@ export const LANGUAGE_LABELS: Record<AppLanguage, string> = {
 export const LANGUAGE_NAMES: Record<AppLanguage, string> = {
   uz: "O'zbek",
   en: 'English',
-  ru: 'Русский',
+  ru: 'Russian',
 };
 
 const FALLBACK_SUMMARY: Record<AppLanguage, string> = {
   uz: "Natijaga yo'naltirilgan developer. Murakkab biznes talablarini aniq, ishonchli va kengayadigan raqamli mahsulotlarga aylantirishga ixtisoslashgan.",
   en: 'Results-driven developer focused on turning complex business requirements into reliable, scalable digital products.',
-  ru: 'Разработчик, ориентированный на результат: превращаю сложные бизнес-задачи в надежные и масштабируемые цифровые продукты.',
+  ru: 'Results-driven developer focused on turning complex business requirements into reliable, scalable digital products.',
 };
 
 const FALLBACK_HEADLINE: Record<AppLanguage, string> = {
   uz: 'Full-stack Developer',
   en: 'Full-stack Developer',
-  ru: 'Full-stack разработчик',
+  ru: 'Full-stack Developer',
 };
 
 const FALLBACK_EDUCATION: Record<AppLanguage, string> = {
   uz: 'Professional self-directed learning and applied project experience',
   en: 'Professional self-directed learning and applied project experience',
-  ru: 'Самостоятельное профессиональное обучение и практический проектный опыт',
+  ru: 'Professional self-directed learning and applied project experience',
 };
 
 export const buildResumeData = (

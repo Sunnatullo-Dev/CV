@@ -58,6 +58,7 @@ export const PortfolioWizard = ({
 
   useEffect(() => {
     setCvContent(null);
+    setAiTips([]);
   }, [language]);
 
   const handleCloseModal = () => {
@@ -81,7 +82,7 @@ export const PortfolioWizard = ({
     if (projects.length === 0) return;
     setIsGeneratingTips(true);
     try {
-      const tips = await getPortfolioRecommendations(user, projects);
+      const tips = await getPortfolioRecommendations(user, projects, language);
       setAiTips(tips);
     } catch (err) {
       console.error(err);
@@ -94,7 +95,7 @@ export const PortfolioWizard = ({
     if (currentStep === 2 && aiTips.length === 0) {
       fetchAiTips();
     }
-  }, [currentStep, projects]);
+  }, [currentStep, projects, language]);
 
   const nextStep = () => {
     setError(null);
@@ -384,7 +385,7 @@ export const PortfolioWizard = ({
                         <div className="flex justify-between items-center mb-4">
                           <div className="flex items-center gap-2">
                             <div className="w-1 h-4 bg-green-500 rounded-full" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tayyor Rezyume (Markdown)</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Structured ATS CV (Markdown)</span>
                           </div>
                           <div className="flex gap-2">
                             <button 
