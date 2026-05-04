@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "../shared/Button";
-import { ChevronRight, ChevronLeft, Github, Layout, CheckCircle, FileText, Loader2, Rocket, Linkedin, Twitter, Globe, ArrowUp, ArrowDown, Terminal, Sparkles, BrainCircuit, Lightbulb, Info, FileJson, FileUser, Copy, Download, Cpu } from "lucide-react";
+import { ChevronRight, ChevronLeft, Github, Layout, CheckCircle, FileText, Loader2, Rocket, Linkedin, Twitter, Globe, ArrowUp, ArrowDown, Terminal, Sparkles, BrainCircuit, Lightbulb, Info, FileJson, FileUser, Copy, Download, Cpu, Edit3, Save, X } from "lucide-react";
 import axios from "axios";
 import { cn } from "../../lib/utils";
 import { AppLanguage, User, Project } from "../../types";
@@ -557,6 +557,7 @@ const GithubStep = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState(user.githubUsername);
+  const [editingProject, setEditingProject] = useState<(Project & { tagsText: string }) | null>(null);
 
   const fetchRepos = async () => {
     if (!username) return;
@@ -570,6 +571,8 @@ const GithubStep = ({
         userId: user.id,
         title: repo.name,
         description: repo.description || "Tavsif mavjud emas.",
+        role: repo.language ? `${repo.language} Developer` : "Software Developer",
+        impact: "",
         repoUrl: repo.html_url,
         url: repo.homepage,
         tags: [repo.language || "Open Source"],
@@ -623,6 +626,41 @@ const GithubStep = ({
     onProjectsSynced(orderedProjects);
   };
 
+  const openProjectEditor = (project: Project) => {
+    setEditingProject({
+      ...project,
+      tagsText: project.tags.join(", "),
+    });
+  };
+
+  const saveProject = () => {
+    if (!editingProject) return;
+
+    const tags = editingProject.tagsText
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+
+    const updatedProjects = projects.map((project) => (
+      project.id === editingProject.id
+        ? {
+          ...project,
+          title: editingProject.title.trim() || project.title,
+          description: editingProject.description.trim() || "Tavsif mavjud emas.",
+          role: editingProject.role?.trim(),
+          impact: editingProject.impact?.trim(),
+          url: editingProject.url?.trim(),
+          repoUrl: editingProject.repoUrl?.trim(),
+          tags: tags.length ? tags : ["Open Source"],
+          isPublic: editingProject.isPublic,
+        }
+        : project
+    ));
+
+    onProjectsSynced(updatedProjects);
+    setEditingProject(null);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -658,7 +696,7 @@ const GithubStep = ({
         <div className="space-y-4 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
           <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Loyihalar ro'yxati</h3>
           {[...projects].sort((a, b) => a.order - b.order).map((project, index) => (
-            <div key={project.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4 group">
+            <div key={project.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col gap-4 group sm:flex-row sm:items-center">
               <div className="flex flex-col gap-1">
                 <button 
                   onClick={() => moveProject(index, 'up')}
@@ -685,24 +723,150 @@ const GithubStep = ({
                 </div>
                 <div className="overflow-hidden">
                   <p className="font-bold text-sm text-slate-900 truncate">{project.title}</p>
-                  <p className="text-[10px] text-slate-400 truncate">{project.repoUrl}</p>
+                  <p className="text-[10px] text-slate-400 truncate">{project.role || project.repoUrl}</p>
                 </div>
               </div>
-              <label className="flex-shrink-0 cursor-pointer">
-                <input 
-                  type="file" 
-                  className="hidden" 
-                  accept="image/*" 
-                  onChange={(e) => handleImageUpload(project.id, e)} 
-                />
-                <div className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:bg-indigo-50 transition-colors shadow-sm">
-                  {project.image ? "Change" : "Upload"}
-                </div>
-              </label>
+              <div className="flex flex-shrink-0 gap-2">
+                <button
+                  onClick={() => openProjectEditor(project)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-100 transition-colors shadow-sm"
+                >
+                  <Edit3 size={12} />
+                  Edit
+                </button>
+                <label className="cursor-pointer">
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/*" 
+                    onChange={(e) => handleImageUpload(project.id, e)} 
+                  />
+                  <div className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:bg-indigo-50 transition-colors shadow-sm">
+                    {project.image ? "Change" : "Upload"}
+                  </div>
+                </label>
+              </div>
             </div>
           ))}
         </div>
       )}
+
+      <AnimatePresence>
+        {editingProject && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setEditingProject(null)}
+              className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.98 }}
+              className="relative w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+                <div>
+                  <h3 className="text-lg font-black text-slate-950">Loyihani professional tahrirlash</h3>
+                  <p className="text-sm text-slate-500">Case study, CV va portfolio uchun aniqroq matn yozing.</p>
+                </div>
+                <button onClick={() => setEditingProject(null)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="max-h-[70vh] space-y-5 overflow-y-auto p-6 custom-scrollbar">
+                <ProjectField label="Loyiha nomi">
+                  <input
+                    value={editingProject.title}
+                    onChange={(e) => setEditingProject((prev) => prev ? { ...prev, title: e.target.value } : prev)}
+                    className="w-full h-12 rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50"
+                  />
+                </ProjectField>
+
+                <ProjectField label="Sizning rolingiz">
+                  <input
+                    value={editingProject.role || ""}
+                    onChange={(e) => setEditingProject((prev) => prev ? { ...prev, role: e.target.value } : prev)}
+                    placeholder="Full-stack Developer, Frontend Engineer..."
+                    className="w-full h-12 rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50"
+                  />
+                </ProjectField>
+
+                <ProjectField label="Professional tavsif">
+                  <textarea
+                    value={editingProject.description}
+                    onChange={(e) => setEditingProject((prev) => prev ? { ...prev, description: e.target.value } : prev)}
+                    className="min-h-[120px] w-full rounded-xl border border-slate-200 bg-slate-50/50 p-4 text-sm font-medium leading-6 text-slate-800 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50"
+                  />
+                </ProjectField>
+
+                <ProjectField label="Natija yoki impact">
+                  <textarea
+                    value={editingProject.impact || ""}
+                    onChange={(e) => setEditingProject((prev) => prev ? { ...prev, impact: e.target.value } : prev)}
+                    placeholder="Masalan: sahifa yuklanishini 35% tezlashtirdim, admin jarayonini avtomatlashtirdim..."
+                    className="min-h-[90px] w-full rounded-xl border border-slate-200 bg-slate-50/50 p-4 text-sm font-medium leading-6 text-slate-800 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50"
+                  />
+                </ProjectField>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <ProjectField label="Live URL">
+                    <input
+                      value={editingProject.url || ""}
+                      onChange={(e) => setEditingProject((prev) => prev ? { ...prev, url: e.target.value } : prev)}
+                      placeholder="https://..."
+                      className="w-full h-12 rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm font-medium text-slate-800 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50"
+                    />
+                  </ProjectField>
+                  <ProjectField label="Repo URL">
+                    <input
+                      value={editingProject.repoUrl || ""}
+                      onChange={(e) => setEditingProject((prev) => prev ? { ...prev, repoUrl: e.target.value } : prev)}
+                      placeholder="https://github.com/..."
+                      className="w-full h-12 rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm font-medium text-slate-800 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50"
+                    />
+                  </ProjectField>
+                </div>
+
+                <ProjectField label="Texnologiyalar">
+                  <input
+                    value={editingProject.tagsText}
+                    onChange={(e) => setEditingProject((prev) => prev ? { ...prev, tagsText: e.target.value } : prev)}
+                    placeholder="React, TypeScript, Node.js"
+                    className="w-full h-12 rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm font-medium text-slate-800 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50"
+                  />
+                </ProjectField>
+
+                <label className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">Portfolio’da ko‘rsatish</p>
+                    <p className="text-xs text-slate-500">Public bo‘lmagan yoki kuchsiz loyihani yashirib qo‘yish mumkin.</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={editingProject.isPublic}
+                    onChange={(e) => setEditingProject((prev) => prev ? { ...prev, isPublic: e.target.checked } : prev)}
+                    className="h-5 w-5 rounded border-slate-300 text-indigo-600"
+                  />
+                </label>
+              </div>
+
+              <div className="flex flex-col gap-3 border-t border-slate-100 p-5 sm:flex-row sm:justify-end">
+                <Button variant="outline" onClick={() => setEditingProject(null)} className="rounded-xl border-slate-200">
+                  Bekor qilish
+                </Button>
+                <Button onClick={saveProject} className="rounded-xl bg-slate-950 text-white hover:bg-slate-800">
+                  <Save className="mr-2" size={16} />
+                  Saqlash
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <div className="p-5 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-start gap-4">
         <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-100 shrink-0">
@@ -718,6 +882,13 @@ const GithubStep = ({
     </div>
   );
 };
+
+const ProjectField = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <label className="block space-y-2">
+    <span className="ml-1 text-[11px] font-black uppercase tracking-widest text-slate-400">{label}</span>
+    {children}
+  </label>
+);
 
 const TEMPLATE_DETAILS: Record<string, { philosophy: string; features: string[] }> = {
   'modern-minimalist': {

@@ -13,29 +13,30 @@ interface PreviewProps {
 
 export const PortfolioPreview = ({ user, projects, templateId = "minimalist", language = "uz" }: PreviewProps) => {
   const currentYear = new Date().getFullYear();
+  const visibleProjects = projects.filter((project) => project.isPublic !== false);
 
-  if (projects.length === 0) {
+  if (visibleProjects.length === 0) {
     return <EmptyPortfolioPreview user={user} templateId={templateId} currentYear={currentYear} language={language} />;
   }
 
   switch (templateId) {
     case "modern-minimalist":
-      return <ModernMinimalistLayout user={user} projects={projects} currentYear={currentYear} />;
+      return <ModernMinimalistLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
     case "modern-technical":
-      return <ModernTechnicalLayout user={user} projects={projects} currentYear={currentYear} />;
+      return <ModernTechnicalLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
     case "dark":
-      return <DarkTechnicalLayout user={user} projects={projects} currentYear={currentYear} />;
+      return <DarkTechnicalLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
     case "bento":
-      return <ModernBentoLayout user={user} projects={projects} currentYear={currentYear} />;
+      return <ModernBentoLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
     case "brutalist":
-      return <NeoBrutalistLayout user={user} projects={projects} currentYear={currentYear} />;
+      return <NeoBrutalistLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
     case "terminal":
-      return <RetroTerminalLayout user={user} projects={projects} currentYear={currentYear} />;
+      return <RetroTerminalLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
     case "serif":
-      return <ProfessionalSerifLayout user={user} projects={projects} currentYear={currentYear} />;
+      return <ProfessionalSerifLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
     case "minimalist":
     default:
-      return <MinimalistLayout user={user} projects={projects} currentYear={currentYear} />;
+      return <MinimalistLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
   }
 };
 

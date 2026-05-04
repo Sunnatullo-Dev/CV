@@ -18,6 +18,8 @@ export interface Project {
   userId: string;
   title: string;
   description: string;
+  role?: string;
+  impact?: string;
   url?: string;
   repoUrl?: string;
   githubId?: number;
