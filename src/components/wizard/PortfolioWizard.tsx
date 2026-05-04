@@ -187,7 +187,7 @@ export const PortfolioWizard = ({
                   onProjectsSynced={onProjectsSynced} 
                 />
               )}
-              {currentStep === 2 && <TemplateStep selected={selectedTemplate} onSelect={setSelectedTemplate} aiTips={aiTips} isGenerating={isGeneratingTips} />}
+              {currentStep === 2 && <ProfessionalTemplateStep selected={selectedTemplate} onSelect={setSelectedTemplate} aiTips={aiTips} isGenerating={isGeneratingTips} />}
               {currentStep === 3 && <PublishStep username={user.githubUsername} />}
             </motion.div>
           </AnimatePresence>
@@ -923,6 +923,223 @@ const TEMPLATE_DETAILS: Record<string, { philosophy: string; features: string[] 
     philosophy: "Elegant va nufuzli. Akademik va klassik uslubni xush ko'ruvchilar uchun mos keluvchi dizayn.",
     features: ["Serif shriftlar (Playfair)", "Klassik kitob uslubi", "Yuqori darajadagi tipografiya", "Elegant va minimal"]
   }
+};
+
+const PROFESSIONAL_TEMPLATES = [
+  {
+    id: 'minimalist',
+    name: 'Minimalist Persona',
+    audience: 'Universal developer CV',
+    icon: Layout,
+    tone: 'slate',
+  },
+  {
+    id: 'modern-technical',
+    name: 'Senior Developer',
+    audience: 'Backend, full-stack, architect',
+    icon: Cpu,
+    tone: 'dark',
+  },
+  {
+    id: 'modern-minimalist',
+    name: 'Product Engineer',
+    audience: 'Frontend, UI, product builders',
+    icon: Rocket,
+    tone: 'blue',
+  },
+  {
+    id: 'bento',
+    name: 'Creative Bento',
+    audience: 'Case studies and screenshots',
+    icon: Layout,
+    tone: 'purple',
+  },
+  {
+    id: 'serif',
+    name: 'Minimal Executive',
+    audience: 'Senior and consulting profile',
+    icon: FileText,
+    tone: 'amber',
+  },
+  {
+    id: 'terminal',
+    name: 'DevOps Terminal',
+    audience: 'Infra, CLI, open-source profile',
+    icon: Terminal,
+    tone: 'green',
+  },
+  {
+    id: 'dark',
+    name: 'Dark Technical',
+    audience: 'Engineering portfolio',
+    icon: BrainCircuit,
+    tone: 'dark',
+  },
+  {
+    id: 'brutalist',
+    name: 'Bold Founder',
+    audience: 'Startup and product builder',
+    icon: Sparkles,
+    tone: 'yellow',
+  },
+];
+
+const ProfessionalTemplateStep = ({ selected, onSelect, aiTips, isGenerating }: { selected: string, onSelect: (id: string) => void, aiTips: string[], isGenerating: boolean }) => {
+  const selectedTemplate = PROFESSIONAL_TEMPLATES.find((template) => template.id === selected) || PROFESSIONAL_TEMPLATES[0];
+  const SelectedIcon = selectedTemplate.icon;
+
+  return (
+    <div className="space-y-8">
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h2 className="text-2xl font-extrabold mb-1 tracking-normal text-slate-900">Template gallery</h2>
+          <p className="text-slate-500 text-sm">Rolingiz va portfolio maqsadingizga mos professional shablonni tanlang.</p>
+        </div>
+        <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600">
+          <SelectedIcon size={15} />
+          {selectedTemplate.name}
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[1fr_0.85fr]">
+        <div className="grid gap-4 sm:grid-cols-2">
+          {PROFESSIONAL_TEMPLATES.map((template) => {
+            const Icon = template.icon;
+            const isSelected = template.id === selected;
+
+            return (
+              <button
+                key={template.id}
+                onClick={() => onSelect(template.id)}
+                className={cn(
+                  "group rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-lg",
+                  isSelected ? "border-slate-950 bg-white shadow-xl shadow-slate-200/70" : "border-slate-200 bg-slate-50/70 hover:border-slate-300 hover:bg-white"
+                )}
+              >
+                <TemplateMiniPreview tone={template.tone} />
+                <div className="mt-4 flex items-start justify-between gap-3">
+                  <div>
+                    <div className="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700">
+                      <Icon size={17} />
+                    </div>
+                    <h3 className="text-sm font-black text-slate-950">{template.name}</h3>
+                    <p className="mt-1 text-xs font-medium leading-5 text-slate-500">{template.audience}</p>
+                  </div>
+                  {isSelected && (
+                    <span className="mt-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-950 text-white">
+                      <CheckCircle size={14} />
+                    </span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <aside className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-5 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <TemplateMiniPreview tone={selectedTemplate.tone} large />
+          </div>
+          <div className="mb-4 flex items-center gap-3">
+            <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-950 text-white">
+              <SelectedIcon size={18} />
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-slate-950">{selectedTemplate.name}</h3>
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-400">{selectedTemplate.audience}</p>
+            </div>
+          </div>
+
+          <p className="text-sm font-medium leading-6 text-slate-600">
+            {TEMPLATE_DETAILS[selectedTemplate.id].philosophy}
+          </p>
+
+          <div className="mt-5 grid gap-2">
+            {TEMPLATE_DETAILS[selectedTemplate.id].features.map((feature) => (
+              <div key={feature} className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700">
+                <CheckCircle size={13} className="text-emerald-600" />
+                {feature}
+              </div>
+            ))}
+          </div>
+        </aside>
+      </div>
+
+      <div className="mt-8 pt-8 border-t border-slate-100">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <Sparkles size={18} />
+          </div>
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-normal text-slate-900">AI Shaxsiy Maslahatlar</h3>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Template tanlash va portfolio kuchaytirish uchun</p>
+          </div>
+        </div>
+
+        {isGenerating ? (
+          <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 animate-pulse">
+            <Loader2 className="animate-spin text-indigo-400" size={16} />
+            <span className="text-xs text-slate-400 font-medium">Maslahatlar tahlil qilinmoqda...</span>
+          </div>
+        ) : aiTips.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {aiTips.slice(0, 3).map((tip, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="p-4 bg-white rounded-2xl border border-indigo-50 shadow-sm hover:border-indigo-100 hover:shadow-md transition-all flex gap-3"
+              >
+                <div className="w-5 h-5 rounded-lg bg-indigo-50 text-indigo-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Lightbulb size={12} />
+                </div>
+                <p className="text-[11px] font-bold text-slate-700 leading-relaxed">{tip}</p>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-center">
+            <p className="text-[11px] text-slate-400 font-medium italic">Loyihalaringiz bo'yicha maslahatlar olish uchun GitHub integratsiyasini yakunlang.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const TemplateMiniPreview = ({ tone, large = false }: { tone: string; large?: boolean }) => {
+  const isDark = tone === 'dark';
+  const isTerminal = tone === 'green';
+  const isBold = tone === 'yellow';
+  const accent = tone === 'purple' ? 'bg-purple-500' : tone === 'amber' ? 'bg-amber-700' : tone === 'green' ? 'bg-emerald-500' : tone === 'yellow' ? 'bg-black' : tone === 'blue' ? 'bg-blue-600' : 'bg-slate-950';
+
+  return (
+    <div className={cn(
+      "overflow-hidden rounded-xl border p-3",
+      large ? "h-44" : "h-28",
+      isDark || isTerminal ? "border-slate-800 bg-slate-950" : isBold ? "border-black bg-yellow-300" : "border-slate-200 bg-white"
+    )}>
+      <div className="flex items-center gap-2">
+        <div className={cn("h-6 w-6 rounded-md", accent)} />
+        <div className="space-y-1">
+          <div className={cn("h-2 rounded-full", large ? "w-28" : "w-20", isDark || isTerminal ? "bg-slate-500" : "bg-slate-300")} />
+          <div className={cn("h-2 rounded-full", large ? "w-20" : "w-14", isDark || isTerminal ? "bg-slate-700" : "bg-slate-200")} />
+        </div>
+      </div>
+      <div className={cn("mt-4 grid gap-2", large ? "grid-cols-3" : "grid-cols-2")}>
+        {[0, 1, 2, 3, 4, 5].slice(0, large ? 6 : 4).map((item) => (
+          <div key={item} className={cn(
+            "rounded-lg border p-2",
+            isDark || isTerminal ? "border-slate-800 bg-slate-900" : isBold ? "border-black bg-white" : "border-slate-200 bg-slate-50"
+          )}>
+            <div className={cn("mb-2 h-2 rounded-full", item % 2 === 0 ? accent : isDark || isTerminal ? "bg-slate-700" : "bg-slate-300")} />
+            <div className={cn("h-2 w-2/3 rounded-full", isDark || isTerminal ? "bg-slate-700" : "bg-slate-200")} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 };
 
 const TemplateStep = ({ selected, onSelect, aiTips, isGenerating }: { selected: string, onSelect: (id: string) => void, aiTips: string[], isGenerating: boolean }) => {
