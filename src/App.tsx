@@ -16,6 +16,16 @@ import { useTelegram } from './hooks/useTelegram';
 
 type AppView = 'dashboard' | 'wizard' | 'preview' | 'resume';
 
+type SavedWorkspace = {
+  user?: User;
+  projects?: Project[];
+  selectedTemplate?: string;
+  language?: AppLanguage;
+  savedAt?: string;
+};
+
+const STORAGE_KEY = 'devport.workspace.v1';
+
 const NAV_ITEMS: Array<{ id: AppView | 'ai'; label: string; icon: React.ElementType }> = [
   { id: 'dashboard', label: 'Studio', icon: Home },
   { id: 'wizard', label: 'Builder', icon: Edit3 },
@@ -24,29 +34,57 @@ const NAV_ITEMS: Array<{ id: AppView | 'ai'; label: string; icon: React.ElementT
   { id: 'ai', label: 'AI CV', icon: Sparkles },
 ];
 
+const DEFAULT_USER: User = {
+  id: '1',
+  fullName: 'Samandarov Sunnatulla',
+  bio: "Full-stack Developer va Senior Solution Architect. Murakkab biznes jarayonlarini tez, ishonchli va oson kengayadigan raqamli mahsulotlarga aylantirishga ixtisoslashganman.",
+  githubUsername: '',
+  socialLinks: {
+    linkedin: '',
+    twitter: '',
+    website: '',
+  },
+};
+
+const loadSavedWorkspace = (): SavedWorkspace | null => {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SavedWorkspace;
+
+    return {
+      ...parsed,
+      projects: Array.isArray(parsed.projects) ? parsed.projects : [],
+      language: parsed.language && LANGUAGE_LABELS[parsed.language] ? parsed.language : 'uz',
+    };
+  } catch {
+    return null;
+  }
+};
+
 export default function App() {
   const { tg, user: tgUser } = useTelegram();
+  const savedWorkspace = useMemo(() => loadSavedWorkspace(), []);
   const [view, setView] = useState<AppView>('dashboard');
-  const [selectedTemplate, setSelectedTemplate] = useState('minimalist');
-  const [language, setLanguage] = useState<AppLanguage>('uz');
+  const [selectedTemplate, setSelectedTemplate] = useState(savedWorkspace?.selectedTemplate || 'minimalist');
+  const [language, setLanguage] = useState<AppLanguage>(savedWorkspace?.language || 'uz');
   const [showAiModal, setShowAiModal] = useState(false);
 
-  const [user, setUser] = useState<User>({
-    id: '1',
-    fullName: 'Samandarov Sunnatulla',
-    bio: "Full-stack Developer va Senior Solution Architect. Murakkab biznes jarayonlarini tez, ishonchli va oson kengayadigan raqamli mahsulotlarga aylantirishga ixtisoslashganman.",
-    githubUsername: '',
+  const [user, setUser] = useState<User>(() => ({
+    ...DEFAULT_USER,
+    ...savedWorkspace?.user,
     socialLinks: {
-      linkedin: '',
-      twitter: '',
-      website: '',
+      ...DEFAULT_USER.socialLinks,
+      ...savedWorkspace?.user?.socialLinks,
     },
-  });
+  }));
 
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<Project[]>(savedWorkspace?.projects || []);
 
   useEffect(() => {
-    if (tgUser) {
+    if (tgUser && !savedWorkspace?.user) {
       setUser((prev) => ({
         ...prev,
         fullName: `${tgUser.first_name} ${tgUser.last_name || ''}`.trim(),
@@ -54,6 +92,31 @@ export default function App() {
       }));
     }
   }, [tgUser]);
+
+  useEffect(() => {
+    const workspace: SavedWorkspace = {
+      user,
+      projects,
+      selectedTemplate,
+      language,
+      savedAt: new Date().toISOString(),
+    };
+
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(workspace));
+    } catch {
+      const lightweightWorkspace: SavedWorkspace = {
+        ...workspace,
+        user: user.avatarUrl ? { ...user, avatarUrl: undefined } : user,
+        projects: projects.map((project) => ({ ...project, image: undefined })),
+      };
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lightweightWorkspace));
+      } catch {
+        window.localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+  }, [language, projects, selectedTemplate, user]);
 
   useEffect(() => {
     if (view === 'wizard') {

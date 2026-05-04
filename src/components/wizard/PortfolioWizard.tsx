@@ -29,6 +29,70 @@ interface WizardProps {
   onAiModalClose?: () => void;
 }
 
+type FieldErrors = Record<string, string>;
+
+const GITHUB_USERNAME_PATTERN = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/;
+
+const normalizeGithubUsername = (value: string) => value.trim().replace(/^@/, "");
+
+const isValidGithubUsername = (value: string) => {
+  const username = normalizeGithubUsername(value);
+  return username.length > 0 && GITHUB_USERNAME_PATTERN.test(username);
+};
+
+const isValidUrl = (value?: string) => {
+  const trimmed = value?.trim();
+  if (!trimmed) return true;
+
+  try {
+    const url = new URL(trimmed);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+};
+
+const hasErrors = (errors: FieldErrors) => Object.keys(errors).length > 0;
+
+const getFirstError = (errors: FieldErrors) => Object.values(errors)[0] || null;
+
+const validateProfile = (user: User): FieldErrors => {
+  const errors: FieldErrors = {};
+
+  if (user.fullName.trim().length < 3) {
+    errors.fullName = "Ism kamida 3 ta belgidan iborat bo'lishi kerak.";
+  }
+
+  if (user.bio.trim().length < 40) {
+    errors.bio = "Bio kamida 40 ta belgidan iborat bo'lsa, CV professionalroq chiqadi.";
+  }
+
+  if (!isValidUrl(user.socialLinks?.linkedin)) {
+    errors.linkedin = "LinkedIn linki http yoki https bilan boshlanishi kerak.";
+  }
+
+  if (!isValidUrl(user.socialLinks?.twitter)) {
+    errors.twitter = "Twitter/X linki http yoki https bilan boshlanishi kerak.";
+  }
+
+  if (!isValidUrl(user.socialLinks?.website)) {
+    errors.website = "Website linki http yoki https bilan boshlanishi kerak.";
+  }
+
+  return errors;
+};
+
+const validateGithub = (username: string): FieldErrors => {
+  const errors: FieldErrors = {};
+  const normalized = normalizeGithubUsername(username);
+
+  if (normalized && !isValidGithubUsername(normalized)) {
+    errors.githubUsername = "GitHub username faqat harf, raqam va tirelardan iborat bo'lishi kerak.";
+  }
+
+  return errors;
+};
+
 export const PortfolioWizard = ({ 
   user, 
   setUser, 
@@ -54,6 +118,7 @@ export const PortfolioWizard = ({
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [linkCopyState, setLinkCopyState] = useState<'idle' | 'copied'>('idle');
   const [activeAiTab, setActiveAiTab] = useState<'tips' | 'cv'>('tips');
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   useEffect(() => {
     setShowAiModal(isAiModalOpen);
@@ -103,8 +168,55 @@ export const PortfolioWizard = ({
     }
   }, [currentStep, projects, language]);
 
+  const clearFieldError = (field: string) => {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const validateCurrentStep = () => {
+    const errors = currentStep === 0 ? validateProfile(user) : currentStep === 1 ? validateGithub(user.githubUsername) : {};
+    setFieldErrors(errors);
+
+    if (hasErrors(errors)) {
+      setError(getFirstError(errors));
+      return false;
+    }
+
+    return true;
+  };
+
+  const validateReadyToPublish = () => {
+    const errors: FieldErrors = {
+      ...validateProfile(user),
+      ...validateGithub(user.githubUsername),
+    };
+    const visibleProjects = projects.filter((project) => project.isPublic !== false);
+
+    if (!user.githubUsername.trim()) {
+      errors.githubUsername = "Portfolio publish qilish uchun GitHub username kerak.";
+    }
+
+    if (visibleProjects.length === 0) {
+      errors.projects = "Kamida bitta public loyiha import qiling yoki ko'rsatiladigan qilib belgilang.";
+    }
+
+    setFieldErrors(errors);
+
+    if (hasErrors(errors)) {
+      setError(getFirstError(errors));
+      return false;
+    }
+
+    return true;
+  };
+
   const nextStep = () => {
     setError(null);
+    if (!validateCurrentStep()) return;
     setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
   };
   const prevStep = () => {
@@ -117,6 +229,8 @@ export const PortfolioWizard = ({
       nextStep();
       return;
     }
+
+    if (!validateReadyToPublish()) return;
 
     setIsPublishing(true);
     setError(null);
@@ -184,13 +298,15 @@ export const PortfolioWizard = ({
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.3 }}
             >
-              {currentStep === 0 && <PersonalInfoStep user={user} setUser={setUser} />}
+              {currentStep === 0 && <PersonalInfoStep user={user} setUser={setUser} fieldErrors={fieldErrors} onClearFieldError={clearFieldError} />}
               {currentStep === 1 && (
                 <GithubStep 
                   user={user} 
                   setUser={setUser} 
                   projects={projects} 
                   onProjectsSynced={onProjectsSynced} 
+                  fieldErrors={fieldErrors}
+                  onClearFieldError={clearFieldError}
                 />
               )}
               {currentStep === 2 && <ProfessionalTemplateStep selected={selectedTemplate} onSelect={setSelectedTemplate} aiTips={aiTips} isGenerating={isGeneratingTips} />}
@@ -470,11 +586,29 @@ export const PortfolioWizard = ({
   );
 };
 
-const PersonalInfoStep = ({ user, setUser }: { user: User; setUser: React.Dispatch<React.SetStateAction<User>> }) => {
+const PersonalInfoStep = ({
+  user,
+  setUser,
+  fieldErrors,
+  onClearFieldError,
+}: {
+  user: User;
+  setUser: React.Dispatch<React.SetStateAction<User>>;
+  fieldErrors: FieldErrors;
+  onClearFieldError: (field: string) => void;
+}) => {
+  const [imageError, setImageError] = useState<string | null>(null);
+
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (file.size > 2 * 1024 * 1024) {
+      setImageError("Rasm 2MB dan kichik bo'lishi kerak.");
+      return;
+    }
+
+    setImageError(null);
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64 = reader.result as string;
@@ -502,6 +636,7 @@ const PersonalInfoStep = ({ user, setUser }: { user: User; setUser: React.Dispat
         <div>
           <h2 className="text-xl font-extrabold tracking-normal text-slate-900">Professional Profil</h2>
           <p className="text-slate-500 text-sm leading-relaxed">Rasmingiz va asosiy ma'lumotlaringizni kiriting. AI shular asosida CV yaratadi.</p>
+          {imageError && <FieldError>{imageError}</FieldError>}
         </div>
       </div>
       
@@ -509,21 +644,35 @@ const PersonalInfoStep = ({ user, setUser }: { user: User; setUser: React.Dispat
         <div className="space-y-1.5">
           <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1">To'liq ismingiz</label>
           <input 
-            className="w-full h-14 px-5 rounded-2xl border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 transition-all font-medium text-slate-700 bg-slate-50/50" 
+            className={cn(
+              "w-full h-14 px-5 rounded-2xl border focus:ring-4 transition-all font-medium text-slate-700 bg-slate-50/50",
+              fieldErrors.fullName ? "border-red-300 focus:border-red-500 focus:ring-red-50" : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-50"
+            )}
             placeholder="Samandarov Sunnatulla" 
             value={user.fullName}
-            onChange={(e) => setUser(prev => ({ ...prev, fullName: e.target.value }))}
+            onChange={(e) => {
+              onClearFieldError("fullName");
+              setUser(prev => ({ ...prev, fullName: e.target.value }));
+            }}
           />
+          {fieldErrors.fullName && <FieldError>{fieldErrors.fullName}</FieldError>}
         </div>
 
         <div className="space-y-1.5">
           <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1">Tanishtiruv (Bio)</label>
           <textarea 
-            className="w-full p-5 rounded-2xl border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 transition-all min-h-[140px] font-medium text-slate-700 leading-relaxed bg-slate-50/50" 
+            className={cn(
+              "w-full p-5 rounded-2xl border focus:ring-4 transition-all min-h-[140px] font-medium text-slate-700 leading-relaxed bg-slate-50/50",
+              fieldErrors.bio ? "border-red-300 focus:border-red-500 focus:ring-red-50" : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-50"
+            )}
             placeholder="Tajribali Full-stack Developer..." 
             value={user.bio}
-            onChange={(e) => setUser(prev => ({ ...prev, bio: e.target.value }))}
+            onChange={(e) => {
+              onClearFieldError("bio");
+              setUser(prev => ({ ...prev, bio: e.target.value }));
+            }}
           />
+          {fieldErrors.bio && <FieldError>{fieldErrors.bio}</FieldError>}
         </div>
 
         <div className="pt-2">
@@ -532,38 +681,59 @@ const PersonalInfoStep = ({ user, setUser }: { user: User; setUser: React.Dispat
             <div className="relative">
               <Linkedin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input 
-                className="w-full h-12 pl-12 pr-4 rounded-xl border border-slate-200 focus:border-indigo-500 transition-all text-sm font-medium bg-slate-50/30" 
+                className={cn(
+                  "w-full h-12 pl-12 pr-4 rounded-xl border transition-all text-sm font-medium bg-slate-50/30",
+                  fieldErrors.linkedin ? "border-red-300 focus:border-red-500" : "border-slate-200 focus:border-indigo-500"
+                )}
                 placeholder="LinkedIn URL" 
                 value={user.socialLinks?.linkedin || ""}
-                onChange={(e) => setUser(prev => ({ 
-                  ...prev, 
-                  socialLinks: { ...prev.socialLinks, linkedin: e.target.value } 
-                }))}
+                onChange={(e) => {
+                  onClearFieldError("linkedin");
+                  setUser(prev => ({ 
+                    ...prev, 
+                    socialLinks: { ...prev.socialLinks, linkedin: e.target.value } 
+                  }));
+                }}
               />
+              {fieldErrors.linkedin && <FieldError>{fieldErrors.linkedin}</FieldError>}
             </div>
             <div className="relative">
               <Twitter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input 
-                className="w-full h-12 pl-12 pr-4 rounded-xl border border-slate-200 focus:border-indigo-500 transition-all text-sm font-medium bg-slate-50/30" 
+                className={cn(
+                  "w-full h-12 pl-12 pr-4 rounded-xl border transition-all text-sm font-medium bg-slate-50/30",
+                  fieldErrors.twitter ? "border-red-300 focus:border-red-500" : "border-slate-200 focus:border-indigo-500"
+                )}
                 placeholder="Twitter URL" 
                 value={user.socialLinks?.twitter || ""}
-                onChange={(e) => setUser(prev => ({ 
-                  ...prev, 
-                  socialLinks: { ...prev.socialLinks, twitter: e.target.value } 
-                }))}
+                onChange={(e) => {
+                  onClearFieldError("twitter");
+                  setUser(prev => ({ 
+                    ...prev, 
+                    socialLinks: { ...prev.socialLinks, twitter: e.target.value } 
+                  }));
+                }}
               />
+              {fieldErrors.twitter && <FieldError>{fieldErrors.twitter}</FieldError>}
             </div>
             <div className="relative">
               <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input 
-                className="w-full h-12 pl-12 pr-4 rounded-xl border border-slate-200 focus:border-indigo-500 transition-all text-sm font-medium bg-slate-50/30" 
+                className={cn(
+                  "w-full h-12 pl-12 pr-4 rounded-xl border transition-all text-sm font-medium bg-slate-50/30",
+                  fieldErrors.website ? "border-red-300 focus:border-red-500" : "border-slate-200 focus:border-indigo-500"
+                )}
                 placeholder="Shaxsiy veb-sayt" 
                 value={user.socialLinks?.website || ""}
-                onChange={(e) => setUser(prev => ({ 
-                  ...prev, 
-                  socialLinks: { ...prev.socialLinks, website: e.target.value } 
-                }))}
+                onChange={(e) => {
+                  onClearFieldError("website");
+                  setUser(prev => ({ 
+                    ...prev, 
+                    socialLinks: { ...prev.socialLinks, website: e.target.value } 
+                  }));
+                }}
               />
+              {fieldErrors.website && <FieldError>{fieldErrors.website}</FieldError>}
             </div>
           </div>
         </div>
@@ -576,22 +746,40 @@ const GithubStep = ({
   user, 
   setUser, 
   projects, 
-  onProjectsSynced 
+  onProjectsSynced,
+  fieldErrors,
+  onClearFieldError,
 }: { 
   user: User, 
   setUser: any, 
   projects: Project[], 
-  onProjectsSynced: (p: Project[]) => void 
+  onProjectsSynced: (p: Project[]) => void,
+  fieldErrors: FieldErrors,
+  onClearFieldError: (field: string) => void,
 }) => {
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState(user.githubUsername);
   const [editingProject, setEditingProject] = useState<(Project & { tagsText: string }) | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [editorErrors, setEditorErrors] = useState<FieldErrors>({});
 
   const fetchRepos = async () => {
-    if (!username) return;
+    const normalizedUsername = normalizeGithubUsername(username);
+    if (!normalizedUsername) {
+      setSyncError("GitHub username kiriting.");
+      return;
+    }
+
+    if (!isValidGithubUsername(normalizedUsername)) {
+      setSyncError("GitHub username faqat harf, raqam va tirelardan iborat bo'lishi kerak.");
+      return;
+    }
+
     setLoading(true);
+    setSyncError(null);
     try {
-      const res = await axios.get(`/api/github/repos/${username}`);
+      const res = await axios.get(`/api/github/repos/${normalizedUsername}`);
       const repos = res.data;
       
       const formattedProjects: Project[] = repos.map((repo: any, index: number) => ({
@@ -609,22 +797,32 @@ const GithubStep = ({
       }));
 
       onProjectsSynced(formattedProjects);
+      setUser((prev: User) => ({ ...prev, githubUsername: normalizedUsername }));
     } catch (e) {
       console.error(e);
+      setSyncError("GitHub foydalanuvchisi topilmadi yoki API javob bermadi.");
     } finally {
       setLoading(false);
     }
   };
 
   const updateUsername = (val: string) => {
+    onClearFieldError("githubUsername");
+    setSyncError(null);
     setUsername(val);
-    setUser((prev: any) => ({ ...prev, githubUsername: val }));
+    setUser((prev: User) => ({ ...prev, githubUsername: normalizeGithubUsername(val) }));
   };
 
   const handleImageUpload = (projectId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (file.size > 2 * 1024 * 1024) {
+      setImageError("Project rasmi 2MB dan kichik bo'lishi kerak.");
+      return;
+    }
+
+    setImageError(null);
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64 = reader.result as string;
@@ -655,6 +853,7 @@ const GithubStep = ({
   };
 
   const openProjectEditor = (project: Project) => {
+    setEditorErrors({});
     setEditingProject({
       ...project,
       tagsText: project.tags.join(", "),
@@ -663,6 +862,29 @@ const GithubStep = ({
 
   const saveProject = () => {
     if (!editingProject) return;
+
+    const errors: FieldErrors = {};
+
+    if (editingProject.title.trim().length < 2) {
+      errors.title = "Loyiha nomi kamida 2 ta belgidan iborat bo'lishi kerak.";
+    }
+
+    if (editingProject.description.trim().length < 20) {
+      errors.description = "Tavsif kamida 20 ta belgidan iborat bo'lsa, portfolio ishonchliroq ko'rinadi.";
+    }
+
+    if (!isValidUrl(editingProject.url)) {
+      errors.url = "Live URL http yoki https bilan boshlanishi kerak.";
+    }
+
+    if (!isValidUrl(editingProject.repoUrl)) {
+      errors.repoUrl = "Repo URL http yoki https bilan boshlanishi kerak.";
+    }
+
+    if (hasErrors(errors)) {
+      setEditorErrors(errors);
+      return;
+    }
 
     const tags = editingProject.tagsText
       .split(",")
@@ -686,6 +908,7 @@ const GithubStep = ({
     ));
 
     onProjectsSynced(updatedProjects);
+    setEditorErrors({});
     setEditingProject(null);
   };
 
@@ -700,15 +923,19 @@ const GithubStep = ({
         <div className="relative group">
           <Github className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
           <input 
-            className="w-full h-14 pl-14 pr-5 rounded-2xl border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 transition-all font-medium text-slate-700 bg-slate-50/50" 
+            className={cn(
+              "w-full h-14 pl-14 pr-5 rounded-2xl border focus:ring-4 transition-all font-medium text-slate-700 bg-slate-50/50",
+              fieldErrors.githubUsername || syncError ? "border-red-300 focus:border-red-500 focus:ring-red-50" : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-50"
+            )}
             placeholder="GitHub Username" 
             value={username}
             onChange={(e) => updateUsername(e.target.value)}
           />
         </div>
+        {(fieldErrors.githubUsername || syncError) && <FieldError>{fieldErrors.githubUsername || syncError}</FieldError>}
         <Button 
           onClick={fetchRepos} 
-          disabled={loading}
+          disabled={loading || !username.trim()}
           className="h-14 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold shadow-lg shadow-slate-200"
         >
           {loading ? (
@@ -723,6 +950,7 @@ const GithubStep = ({
       {projects.length > 0 && (
         <div className="space-y-4 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
           <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Loyihalar ro'yxati</h3>
+          {imageError && <FieldError>{imageError}</FieldError>}
           {[...projects].sort((a, b) => a.order - b.order).map((project, index) => (
             <div key={project.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col gap-4 group sm:flex-row sm:items-center">
               <div className="flex flex-col gap-1">
@@ -806,11 +1034,17 @@ const GithubStep = ({
               </div>
 
               <div className="max-h-[70vh] space-y-5 overflow-y-auto p-6 custom-scrollbar">
-                <ProjectField label="Loyiha nomi">
+                <ProjectField label="Loyiha nomi" error={editorErrors.title}>
                   <input
                     value={editingProject.title}
-                    onChange={(e) => setEditingProject((prev) => prev ? { ...prev, title: e.target.value } : prev)}
-                    className="w-full h-12 rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50"
+                    onChange={(e) => {
+                      setEditorErrors((prev) => ({ ...prev, title: "" }));
+                      setEditingProject((prev) => prev ? { ...prev, title: e.target.value } : prev);
+                    }}
+                    className={cn(
+                      "w-full h-12 rounded-xl border bg-slate-50/50 px-4 text-sm font-semibold text-slate-800 outline-none focus:ring-4",
+                      editorErrors.title ? "border-red-300 focus:border-red-500 focus:ring-red-50" : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-50"
+                    )}
                   />
                 </ProjectField>
 
@@ -823,11 +1057,17 @@ const GithubStep = ({
                   />
                 </ProjectField>
 
-                <ProjectField label="Professional tavsif">
+                <ProjectField label="Professional tavsif" error={editorErrors.description}>
                   <textarea
                     value={editingProject.description}
-                    onChange={(e) => setEditingProject((prev) => prev ? { ...prev, description: e.target.value } : prev)}
-                    className="min-h-[120px] w-full rounded-xl border border-slate-200 bg-slate-50/50 p-4 text-sm font-medium leading-6 text-slate-800 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50"
+                    onChange={(e) => {
+                      setEditorErrors((prev) => ({ ...prev, description: "" }));
+                      setEditingProject((prev) => prev ? { ...prev, description: e.target.value } : prev);
+                    }}
+                    className={cn(
+                      "min-h-[120px] w-full rounded-xl border bg-slate-50/50 p-4 text-sm font-medium leading-6 text-slate-800 outline-none focus:ring-4",
+                      editorErrors.description ? "border-red-300 focus:border-red-500 focus:ring-red-50" : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-50"
+                    )}
                   />
                 </ProjectField>
 
@@ -841,20 +1081,32 @@ const GithubStep = ({
                 </ProjectField>
 
                 <div className="grid gap-4 md:grid-cols-2">
-                  <ProjectField label="Live URL">
+                  <ProjectField label="Live URL" error={editorErrors.url}>
                     <input
                       value={editingProject.url || ""}
-                      onChange={(e) => setEditingProject((prev) => prev ? { ...prev, url: e.target.value } : prev)}
+                      onChange={(e) => {
+                        setEditorErrors((prev) => ({ ...prev, url: "" }));
+                        setEditingProject((prev) => prev ? { ...prev, url: e.target.value } : prev);
+                      }}
                       placeholder="https://..."
-                      className="w-full h-12 rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm font-medium text-slate-800 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50"
+                      className={cn(
+                        "w-full h-12 rounded-xl border bg-slate-50/50 px-4 text-sm font-medium text-slate-800 outline-none focus:ring-4",
+                        editorErrors.url ? "border-red-300 focus:border-red-500 focus:ring-red-50" : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-50"
+                      )}
                     />
                   </ProjectField>
-                  <ProjectField label="Repo URL">
+                  <ProjectField label="Repo URL" error={editorErrors.repoUrl}>
                     <input
                       value={editingProject.repoUrl || ""}
-                      onChange={(e) => setEditingProject((prev) => prev ? { ...prev, repoUrl: e.target.value } : prev)}
+                      onChange={(e) => {
+                        setEditorErrors((prev) => ({ ...prev, repoUrl: "" }));
+                        setEditingProject((prev) => prev ? { ...prev, repoUrl: e.target.value } : prev);
+                      }}
                       placeholder="https://github.com/..."
-                      className="w-full h-12 rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm font-medium text-slate-800 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50"
+                      className={cn(
+                        "w-full h-12 rounded-xl border bg-slate-50/50 px-4 text-sm font-medium text-slate-800 outline-none focus:ring-4",
+                        editorErrors.repoUrl ? "border-red-300 focus:border-red-500 focus:ring-red-50" : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-50"
+                      )}
                     />
                   </ProjectField>
                 </div>
@@ -911,10 +1163,15 @@ const GithubStep = ({
   );
 };
 
-const ProjectField = ({ label, children }: { label: string; children: React.ReactNode }) => (
+const FieldError = ({ children }: { children: React.ReactNode }) => (
+  <p className="mt-1 text-xs font-semibold leading-5 text-red-600">{children}</p>
+);
+
+const ProjectField = ({ label, children, error }: { label: string; children: React.ReactNode; error?: string }) => (
   <label className="block space-y-2">
     <span className="ml-1 text-[11px] font-black uppercase tracking-widest text-slate-400">{label}</span>
     {children}
+    {error && <FieldError>{error}</FieldError>}
   </label>
 );
 
