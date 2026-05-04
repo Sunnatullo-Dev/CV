@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="uz">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DevPort | Professional Portfolio & CV Builder</title>
+    <meta
+      name="description"
+      content="GitHub integratsiyasi, portfolio preview va AI yordamida professional CV tayyorlash studiyasi."
+    />
+    <script>
+      // Patch window.fetch for runtimes that expose it as a read-only getter.
+      (function() {
+        try {
+          var _localFetch = window.fetch;
+          Object.defineProperty(window, 'fetch', {
+            configurable: true,
+            enumerable: true,
+            get: function() {
+              return _localFetch;
+            },
+            set: function(v) {
+              _localFetch = v;
+            }
+          });
+        } catch (e) {
+          console.warn('Could not re-define window.fetch:', e);
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

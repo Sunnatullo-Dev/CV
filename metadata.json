@@ -1,0 +1,11 @@
+{
+  "name": "DevPort: Professional Portfolio & CV Builder",
+  "description": "Create a stunning developer portfolio and CV in 5 minutes with GitHub integration and PDF export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "GitHub Integration",
+    "Tailwind UI",
+    "PDF Generation",
+    "SaaS MVP"
+  ]
+}
