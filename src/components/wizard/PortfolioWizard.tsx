@@ -23,6 +23,8 @@ interface WizardProps {
   selectedTemplate: string;
   setSelectedTemplate: (id: string) => void;
   language: AppLanguage;
+  onOpenPreview: () => void;
+  onOpenResume: () => void;
   isAiModalOpen?: boolean;
   onAiModalClose?: () => void;
 }
@@ -35,6 +37,8 @@ export const PortfolioWizard = ({
   selectedTemplate, 
   setSelectedTemplate,
   language,
+  onOpenPreview,
+  onOpenResume,
   isAiModalOpen = false,
   onAiModalClose
 }: WizardProps) => {
@@ -47,6 +51,8 @@ export const PortfolioWizard = ({
   const [cvContent, setCvContent] = useState<string | null>(null);
   const [isGeneratingCv, setIsGeneratingCv] = useState(false);
   const [cvCopyState, setCvCopyState] = useState<'idle' | 'copied'>('idle');
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const [linkCopyState, setLinkCopyState] = useState<'idle' | 'copied'>('idle');
   const [activeAiTab, setActiveAiTab] = useState<'tips' | 'cv'>('tips');
 
   useEffect(() => {
@@ -123,8 +129,7 @@ export const PortfolioWizard = ({
       });
       const result = response.data;
       if (result.success) {
-        // Handle success
-        console.log("Generated:", result.data);
+        setPublishedUrl(result.data?.url || `devport.uz/${user.githubUsername || "username"}`);
       }
     } catch (err: any) {
       console.error("Publishing failed:", err);
@@ -189,7 +194,29 @@ export const PortfolioWizard = ({
                 />
               )}
               {currentStep === 2 && <ProfessionalTemplateStep selected={selectedTemplate} onSelect={setSelectedTemplate} aiTips={aiTips} isGenerating={isGeneratingTips} />}
-              {currentStep === 3 && <PublishStep username={user.githubUsername} />}
+              {currentStep === 3 && (
+                <PublishStep
+                  user={user}
+                  projects={projects}
+                  selectedTemplate={selectedTemplate}
+                  language={language}
+                  publishedUrl={publishedUrl}
+                  linkCopyState={linkCopyState}
+                  onOpenPreview={onOpenPreview}
+                  onOpenResume={onOpenResume}
+                  onOpenAi={() => {
+                    setShowAiModal(true);
+                    setActiveAiTab('cv');
+                    if (!cvContent) fetchAiCV();
+                  }}
+                  onCopyLink={async () => {
+                    const url = publishedUrl || `devport.uz/${user.githubUsername || "username"}`;
+                    await navigator.clipboard.writeText(url);
+                    setLinkCopyState('copied');
+                    window.setTimeout(() => setLinkCopyState('idle'), 1800);
+                  }}
+                />
+              )}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -241,7 +268,7 @@ export const PortfolioWizard = ({
             ) : currentStep === STEPS.length - 1 ? (
               <Rocket className="mr-2" size={18} />
             ) : null}
-            {currentStep === STEPS.length - 1 ? "Launch Project" : "Davom etish"} 
+            {currentStep === STEPS.length - 1 ? (publishedUrl ? "Variant tayyor" : "Tayyor variantni chiqarish") : "Davom etish"} 
             {currentStep !== STEPS.length - 1 && <ChevronRight className="ml-2" size={18} />}
           </Button>
         </div>
@@ -1521,25 +1548,131 @@ const TemplateStep = ({ selected, onSelect, aiTips, isGenerating }: { selected: 
   );
 };
 
-const PublishStep = ({ username }: { username: string }) => (
-  <div className="text-center py-6">
-    <div className="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-3xl rotate-12 flex items-center justify-center mx-auto mb-10 shadow-xl shadow-indigo-100 border border-indigo-100">
-      <CheckCircle size={48} className="-rotate-12" />
-    </div>
-    
-    <div className="max-w-xs mx-auto">
-      <h2 className="text-3xl font-black mb-2 tracking-normal text-slate-900">Hammasi tayyor!</h2>
-      <p className="text-slate-500 leading-relaxed mb-10">Sizning professional portfoliongiz dunyoga ko'rinishga tayyor.</p>
-      
-      <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 mb-4 relative overflow-hidden group">
-        <div className="absolute inset-0 bg-indigo-600 opacity-0 group-hover:opacity-5 transition-opacity" />
-        <span className="text-xs font-bold uppercase tracking-widest text-slate-400 block mb-2">Portfolio manzili</span>
-        <span className="text-lg font-extrabold text-indigo-600 tracking-normal">devport.uz/{username || "username"}</span>
+const PublishStep = ({
+  user,
+  projects,
+  selectedTemplate,
+  language,
+  publishedUrl,
+  linkCopyState,
+  onOpenPreview,
+  onOpenResume,
+  onOpenAi,
+  onCopyLink,
+}: {
+  user: User;
+  projects: Project[];
+  selectedTemplate: string;
+  language: AppLanguage;
+  publishedUrl: string | null;
+  linkCopyState: 'idle' | 'copied';
+  onOpenPreview: () => void;
+  onOpenResume: () => void;
+  onOpenAi: () => void;
+  onCopyLink: () => void;
+}) => {
+  const publicProjects = projects.filter((project) => project.isPublic !== false).length;
+  const readyUrl = publishedUrl || `devport.uz/${user.githubUsername || "username"}`;
+  const completionItems = [
+    { label: "Profil", value: user.fullName ? "Tayyor" : "Kerak" },
+    { label: "Bio", value: user.bio.length > 80 ? "Tayyor" : "Qisqa" },
+    { label: "Loyihalar", value: `${publicProjects} ta` },
+    { label: "Template", value: selectedTemplate },
+    { label: "Til", value: language.toUpperCase() },
+  ];
+
+  return (
+    <div className="space-y-6 py-2">
+      <div className="rounded-3xl border border-emerald-100 bg-emerald-50 p-6 text-center">
+        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-sm">
+          <CheckCircle size={34} />
+        </div>
+        <h2 className="text-3xl font-black tracking-normal text-slate-950">Tayyor variant paketi</h2>
+        <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-emerald-900/75">
+          Ma'lumotlar asosida portfolio, ATS CV/PDF va AI CV matni tayyor. Quyidagi tugmalar orqali yakuniy variantlarni ko'rishingiz mumkin.
+        </p>
       </div>
-      
-      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-loose">
-        Ushbu havola orqali istalgan kishi sizning ishlaringiz bilan tanishishi mumkin.
-      </p>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {completionItems.map((item) => (
+          <div key={item.label} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{item.label}</p>
+            <p className="mt-2 truncate text-sm font-black text-slate-900">{item.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <ReadyActionCard
+          icon={Layout}
+          title="Portfolio preview"
+          description="Tanlangan premium shablonda tayyor portfolio sahifasini ko'ring."
+          action="Ochish"
+          onClick={onOpenPreview}
+        />
+        <ReadyActionCard
+          icon={FileText}
+          title="CV / PDF"
+          description="Modern CV shablonini tanlang va PDF sifatida saqlang."
+          action="CV ochish"
+          onClick={onOpenResume}
+        />
+        <ReadyActionCard
+          icon={Sparkles}
+          title="AI CV matni"
+          description="Structured ATS markdown matnni ko'ring yoki nusxalang."
+          action="AI CV"
+          onClick={onOpenAi}
+        />
+      </div>
+
+      <div className="rounded-3xl border border-slate-200 bg-slate-950 p-5 text-white">
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Public link</p>
+            <p className="mt-2 break-all text-sm font-bold text-slate-100">{readyUrl}</p>
+          </div>
+          <button
+            onClick={onCopyLink}
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-widest text-slate-950 hover:bg-slate-100"
+          >
+            <Copy size={14} />
+            {linkCopyState === 'copied' ? 'Nusxalandi' : 'Copy'}
+          </button>
+        </div>
+        <p className="text-xs leading-6 text-slate-400">
+          “Tayyor variantni chiqarish” bosilgandan keyin ushbu link backend generate flow orqali tasdiqlanadi. Preview va CV esa hozirning o'zida tayyor.
+        </p>
+      </div>
     </div>
-  </div>
+  );
+};
+
+const ReadyActionCard = ({
+  icon: Icon,
+  title,
+  description,
+  action,
+  onClick,
+}: {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  action: string;
+  onClick: () => void;
+}) => (
+  <button
+    onClick={onClick}
+    className="group flex h-full flex-col items-start rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-100/60"
+  >
+    <span className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-slate-950 text-white transition group-hover:bg-indigo-600">
+      <Icon size={20} />
+    </span>
+    <span className="text-base font-black text-slate-950">{title}</span>
+    <span className="mt-2 flex-1 text-xs font-medium leading-5 text-slate-500">{description}</span>
+    <span className="mt-5 inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-indigo-600">
+      {action}
+      <ChevronRight size={14} />
+    </span>
+  </button>
 );

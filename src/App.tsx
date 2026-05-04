@@ -141,6 +141,8 @@ export default function App() {
             selectedTemplate={selectedTemplate}
             setSelectedTemplate={setSelectedTemplate}
             language={language}
+            onOpenPreview={() => handleNavigate('preview')}
+            onOpenResume={() => handleNavigate('resume')}
             isAiModalOpen={showAiModal}
             onAiModalClose={() => setShowAiModal(false)}
           />
