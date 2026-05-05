@@ -216,7 +216,6 @@ export const PortfolioWizard = ({
   };
 
   const fetchAiTips = async () => {
-    if (projects.length === 0) return;
     setIsGeneratingTips(true);
     try {
       const tips = await getPortfolioRecommendations(user, projects, language);
@@ -225,6 +224,19 @@ export const PortfolioWizard = ({
       console.error(err);
     } finally {
       setIsGeneratingTips(false);
+    }
+  };
+
+  const openAiTab = (tab: 'setup' | 'tips' | 'cv' | 'tailor') => {
+    setError(null);
+    setActiveAiTab(tab);
+
+    if (tab === 'tips' && aiTips.length === 0 && !isGeneratingTips) {
+      fetchAiTips();
+    }
+
+    if (tab === 'cv' && !aiSetupConfirmed) {
+      setError("AI CV yaratishdan oldin CV Setup bo'limidagi ma'lumotlarni tasdiqlang.");
     }
   };
 
@@ -482,8 +494,8 @@ export const PortfolioWizard = ({
             whileHover={{ y: -2 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => {
-              setActiveAiTab('tips');
               setShowAiModal(true);
+              openAiTab('tips');
             }}
             className="w-12 h-12 md:w-14 md:h-14 bg-slate-950 text-white rounded-lg flex items-center justify-center shadow-xl shadow-slate-900/15 border border-white/20 group relative"
           >
@@ -533,7 +545,7 @@ export const PortfolioWizard = ({
 
                 <div className="relative z-10 flex flex-wrap gap-2">
                   <button 
-                    onClick={() => setActiveAiTab('setup')}
+                    onClick={() => openAiTab('setup')}
                     className={cn(
                       "px-4 py-2 rounded-md text-xs font-bold uppercase tracking-widest transition-all",
                       activeAiTab === 'setup' ? "bg-white text-slate-950 shadow-lg" : "hover:bg-white/10 text-slate-200"
@@ -542,7 +554,7 @@ export const PortfolioWizard = ({
                     CV Setup
                   </button>
                   <button 
-                    onClick={() => setActiveAiTab('tips')}
+                    onClick={() => openAiTab('tips')}
                     className={cn(
                       "px-4 py-2 rounded-md text-xs font-bold uppercase tracking-widest transition-all",
                       activeAiTab === 'tips' ? "bg-white text-slate-950 shadow-lg" : "hover:bg-white/10 text-slate-200"
@@ -551,13 +563,7 @@ export const PortfolioWizard = ({
                     Maslahatlar
                   </button>
                   <button 
-                    onClick={() => {
-                      if (!aiSetupConfirmed) {
-                        setActiveAiTab('setup');
-                        return;
-                      }
-                      setActiveAiTab('cv');
-                    }}
+                    onClick={() => openAiTab('cv')}
                     className={cn(
                       "px-4 py-2 rounded-md text-xs font-bold uppercase tracking-widest transition-all",
                       activeAiTab === 'cv' ? "bg-white text-slate-950 shadow-lg" : "hover:bg-white/10 text-slate-200"
@@ -566,7 +572,7 @@ export const PortfolioWizard = ({
                     AI CV Yaratish
                   </button>
                   <button 
-                    onClick={() => setActiveAiTab('tailor')}
+                    onClick={() => openAiTab('tailor')}
                     className={cn(
                       "px-4 py-2 rounded-md text-xs font-bold uppercase tracking-widest transition-all",
                       activeAiTab === 'tailor' ? "bg-white text-slate-950 shadow-lg" : "hover:bg-white/10 text-slate-200"
@@ -725,29 +731,54 @@ export const PortfolioWizard = ({
                         <div className="w-1 h-4 bg-indigo-500 rounded-full" />
                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">AI Shaxsiy Maslahatlar</span>
                       </div>
-                      <div className="grid grid-cols-1 gap-4">
-                        {aiTips.map((tip, i) => (
-                          <motion.div 
-                            key={i}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: i * 0.1 }}
-                            className="flex gap-4 bg-white p-5 rounded-3xl border border-slate-100 shadow-sm group hover:border-indigo-100 hover:shadow-md transition-all"
-                          >
-                            <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0 text-indigo-600 group-hover:scale-110 transition-transform">
-                              <Lightbulb size={18} />
-                            </div>
-                            <p className="text-xs md:text-sm leading-relaxed font-bold text-slate-700">
-                              {tip}
-                            </p>
-                          </motion.div>
-                        ))}
-                      </div>
+                      {aiTips.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-4">
+                          {aiTips.map((tip, i) => (
+                            <motion.div 
+                              key={i}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: i * 0.1 }}
+                              className="flex gap-4 bg-white p-5 rounded-3xl border border-slate-100 shadow-sm group hover:border-indigo-100 hover:shadow-md transition-all"
+                            >
+                              <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0 text-indigo-600 group-hover:scale-110 transition-transform">
+                                <Lightbulb size={18} />
+                              </div>
+                              <p className="text-xs md:text-sm leading-relaxed font-bold text-slate-700">
+                                {tip}
+                              </p>
+                            </motion.div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="rounded-3xl border border-slate-100 bg-white p-6 text-center shadow-sm">
+                          <Lightbulb className="mx-auto mb-4 text-indigo-500" size={28} />
+                          <h3 className="text-base font-black text-slate-900">Maslahatlar tayyorlanadi</h3>
+                          <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">
+                            Tugmani bosing, AI hozirgi profil va kiritilgan ma'lumotlar asosida portfolio/CV bo'yicha javob beradi.
+                          </p>
+                          <Button onClick={fetchAiTips} className="mt-5 rounded-xl bg-slate-950 text-white hover:bg-slate-800">
+                            <Sparkles className="mr-2" size={16} />
+                            Maslahat olish
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   )
                 ) : activeAiTab === 'cv' ? (
                   <div className="space-y-6">
-                    {isGeneratingCv ? (
+                    {!aiSetupConfirmed ? (
+                      <div className="rounded-3xl border border-amber-100 bg-amber-50 p-6 text-center">
+                        <FileUser className="mx-auto mb-4 text-amber-700" size={34} />
+                        <h3 className="text-lg font-black text-slate-950">Avval CV Setup kerak</h3>
+                        <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-amber-900/75">
+                          AI CV yaratish uchun ism-familiya, rasm, bio, tajriba va shablon tanlovini tasdiqlang. Shundan keyin Gemini avtomatik tayyor CV beradi.
+                        </p>
+                        <Button onClick={() => openAiTab('setup')} className="mt-5 rounded-xl bg-slate-950 text-white hover:bg-slate-800">
+                          CV Setupga o'tish
+                        </Button>
+                      </div>
+                    ) : isGeneratingCv ? (
                       <div className="py-20 flex flex-col items-center text-center">
                         <div className="relative mb-6">
                           <div className="w-20 h-20 border-4 border-indigo-100 rounded-full border-t-indigo-600 animate-spin" />
@@ -846,6 +877,16 @@ export const PortfolioWizard = ({
                           <Markdown>{tailoredCvContent}</Markdown>
                         </div>
                       </motion.div>
+                    )}
+
+                    {!tailoredCvContent && !isTailoringCv && (
+                      <div className="rounded-3xl border border-slate-100 bg-white p-6 text-center shadow-sm">
+                        <FileText className="mx-auto mb-4 text-blue-600" size={30} />
+                        <h3 className="text-base font-black text-slate-900">Vakansiyaga mos javob</h3>
+                        <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+                          Vakansiya matnini kiriting va "Moslashtirish"ni bosing. AI sizning real tajribangizga tayanib, shu ish uchun mos CV variantini beradi.
+                        </p>
+                      </div>
                     )}
                   </div>
                 )}
