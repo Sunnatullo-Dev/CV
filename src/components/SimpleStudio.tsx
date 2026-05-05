@@ -8,7 +8,6 @@ import {
   Eye,
   FileText,
   Github,
-  LayoutGrid,
   Loader2,
   Palette,
   Plus,
@@ -23,6 +22,7 @@ import axios from "axios";
 import { AppLanguage, Project, User } from "../types";
 import { cn } from "../lib/utils";
 import { generateAiCV } from "../services/aiService";
+import { getAppCopy } from "../lib/i18n";
 
 type StudioStep = "profile" | "template" | "ready";
 
@@ -51,53 +51,41 @@ type GithubRepo = {
   stargazers_count?: number;
 };
 
-const STEPS: Array<{ id: StudioStep; label: string; icon: React.ElementType }> = [
-  { id: "profile", label: "Ma'lumot", icon: UserRound },
-  { id: "template", label: "Shablon", icon: Palette },
-  { id: "ready", label: "Natija", icon: CheckCircle2 },
+const STEPS: Array<{ id: StudioStep; icon: React.ElementType }> = [
+  { id: "profile", icon: UserRound },
+  { id: "template", icon: Palette },
+  { id: "ready", icon: CheckCircle2 },
 ];
 
 const TEMPLATE_OPTIONS = [
   {
     id: "premium-developer",
     name: "Premium Developer",
-    role: "Developer portfolio",
-    tone: "Clean blue",
     swatch: "from-sky-500 to-slate-900",
   },
   {
     id: "case-study-pro",
     name: "Case Study Pro",
-    role: "Loyiha va natijalar",
-    tone: "Warm editorial",
     swatch: "from-amber-400 to-slate-900",
   },
   {
     id: "executive-architect",
     name: "Executive Architect",
-    role: "Senior va architect",
-    tone: "Calm premium",
     swatch: "from-stone-400 to-slate-950",
   },
   {
     id: "modern-technical",
     name: "Senior Developer",
-    role: "Backend va full-stack",
-    tone: "Dark technical",
     swatch: "from-cyan-400 to-slate-950",
   },
   {
     id: "modern-minimalist",
     name: "Product Engineer",
-    role: "Frontend va product",
-    tone: "Bright minimal",
     swatch: "from-emerald-400 to-slate-900",
   },
   {
     id: "minimalist",
     name: "Minimalist Persona",
-    role: "Universal CV",
-    tone: "Sharp simple",
     swatch: "from-slate-300 to-slate-950",
   },
 ];
@@ -129,6 +117,7 @@ export const SimpleStudio = ({
   onOpenCv,
   onResetWorkspace,
 }: SimpleStudioProps) => {
+  const copy = getAppCopy(language).studio;
   const [step, setStep] = useState<StudioStep>("profile");
   const [projectDraft, setProjectDraft] = useState(emptyProjectDraft);
   const [notice, setNotice] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -145,13 +134,14 @@ export const SimpleStudio = ({
   );
 
   const selectedTemplateDetails = TEMPLATE_OPTIONS.find((template) => template.id === selectedTemplate) || TEMPLATE_OPTIONS[0];
+  const selectedTemplateCopy = copy.templates[selectedTemplateDetails.id as keyof typeof copy.templates] || copy.templates["premium-developer"];
 
   const readiness = [
-    { label: "Ism", done: user.fullName.trim().length >= 3 },
-    { label: "Bio", done: user.bio.trim().length >= 40 },
-    { label: "Tajriba", done: Boolean(user.experienceSummary?.trim()) },
-    { label: "Shablon", done: Boolean(selectedTemplate) },
-    { label: "Loyiha", done: visibleProjects.length > 0 },
+    { label: copy.ready.checklist.name, done: user.fullName.trim().length >= 3 },
+    { label: copy.ready.checklist.bio, done: user.bio.trim().length >= 40 },
+    { label: copy.ready.checklist.experience, done: Boolean(user.experienceSummary?.trim()) },
+    { label: copy.ready.checklist.template, done: Boolean(selectedTemplate) },
+    { label: copy.ready.checklist.project, done: visibleProjects.length > 0 },
   ];
   const readyCount = readiness.filter((item) => item.done).length;
 
@@ -176,14 +166,14 @@ export const SimpleStudio = ({
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      setNotice({ type: "error", text: "Rasm 2MB dan kichik bo'lishi kerak." });
+      setNotice({ type: "error", text: copy.notices.avatarTooLarge });
       return;
     }
 
     const reader = new FileReader();
     reader.onloadend = () => {
       updateUser({ avatarUrl: String(reader.result) });
-      setNotice({ type: "success", text: "Profil rasmi qo'shildi." });
+      setNotice({ type: "success", text: copy.notices.avatarAdded });
     };
     reader.readAsDataURL(file);
   };
@@ -198,7 +188,7 @@ export const SimpleStudio = ({
     const description = projectDraft.description.trim();
 
     if (title.length < 2 || description.length < 10) {
-      setNotice({ type: "error", text: "Loyiha nomi va qisqa tavsifini to'ldiring." });
+      setNotice({ type: "error", text: copy.notices.projectRequired });
       return;
     }
 
@@ -224,7 +214,7 @@ export const SimpleStudio = ({
 
     onProjectsSynced(normalizeProjectOrder([...projects, nextProject]));
     setProjectDraft(emptyProjectDraft);
-    setNotice({ type: "success", text: "Loyiha qo'shildi." });
+    setNotice({ type: "success", text: copy.notices.projectAdded });
   };
 
   const removeProject = (projectId: string) => {
@@ -243,7 +233,7 @@ export const SimpleStudio = ({
     const username = normalizeGithubUsername(user.githubUsername);
 
     if (!username || !githubUsernamePattern.test(username)) {
-      setNotice({ type: "error", text: "To'g'ri GitHub username kiriting." });
+      setNotice({ type: "error", text: copy.notices.githubInvalid });
       return;
     }
 
@@ -266,7 +256,7 @@ export const SimpleStudio = ({
           id: String(repo.id),
           userId: user.id || "1",
           title: repo.name,
-          description: repo.description || "GitHub loyihasi. Tavsif va natijani aniqroq yozib qo'ying.",
+          description: repo.description || copy.notices.githubFallbackDescription,
           role: repo.language ? `${repo.language} Developer` : "Software Developer",
           impact: repo.stargazers_count ? `${repo.stargazers_count} GitHub star` : "",
           repoUrl: repo.html_url || "",
@@ -281,9 +271,9 @@ export const SimpleStudio = ({
       const manualProjects = projects.filter((project) => !project.githubId);
       onProjectsSynced(normalizeProjectOrder([...manualProjects, ...githubProjects]));
       updateUser({ githubUsername: username });
-      setNotice({ type: "success", text: `${githubProjects.length} ta GitHub loyiha import qilindi.` });
+      setNotice({ type: "success", text: copy.notices.githubImportSuccess(githubProjects.length) });
     } catch {
-      setNotice({ type: "error", text: "GitHub loyihalarini olishda xatolik yuz berdi." });
+      setNotice({ type: "error", text: copy.notices.githubImportError });
     } finally {
       setIsImporting(false);
     }
@@ -292,7 +282,7 @@ export const SimpleStudio = ({
   const generateCv = async () => {
     if (user.fullName.trim().length < 3 || user.bio.trim().length < 20) {
       setStep("profile");
-      setNotice({ type: "error", text: "AI CV uchun ism-familiya va bio kerak." });
+      setNotice({ type: "error", text: copy.notices.aiNeedsProfile });
       return;
     }
 
@@ -303,9 +293,9 @@ export const SimpleStudio = ({
     try {
       const cv = await generateAiCV(user, visibleProjects, language, selectedTemplate);
       setAiCv(cv);
-      setNotice({ type: "success", text: "AI CV tayyor." });
+      setNotice({ type: "success", text: copy.notices.aiReady });
     } catch {
-      setNotice({ type: "error", text: "AI CV yaratishda xatolik yuz berdi." });
+      setNotice({ type: "error", text: copy.notices.aiError });
     } finally {
       setIsGeneratingCv(false);
     }
@@ -316,7 +306,7 @@ export const SimpleStudio = ({
 
     if (!username) {
       setStep("profile");
-      setNotice({ type: "error", text: "Publish uchun GitHub username kerak." });
+      setNotice({ type: "error", text: copy.notices.publishNeedsGithub });
       return;
     }
 
@@ -336,9 +326,9 @@ export const SimpleStudio = ({
 
       const url = response.data?.data?.url || "";
       setPublishedUrl(url);
-      setNotice({ type: "success", text: "Portfolio publish qilindi." });
+      setNotice({ type: "success", text: copy.notices.publishReady });
     } catch {
-      setNotice({ type: "error", text: "Portfolio publish qilishda xatolik yuz berdi." });
+      setNotice({ type: "error", text: copy.notices.publishError });
     } finally {
       setIsPublishing(false);
     }
@@ -355,15 +345,15 @@ export const SimpleStudio = ({
     <section className="mx-auto w-full max-w-6xl px-3 py-5 sm:px-4 sm:py-7 md:px-6">
       <div className="mb-4 flex flex-col gap-3 sm:mb-6 md:flex-row md:items-end md:justify-between">
         <div className="min-w-0">
-          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Simple CV studio</p>
-          <h1 className="mt-2 text-2xl font-black tracking-normal text-slate-950 sm:text-3xl">Professional CV va portfolio</h1>
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">{copy.eyebrow}</p>
+          <h1 className="mt-2 text-2xl font-black tracking-normal text-slate-950 sm:text-3xl">{copy.title}</h1>
         </div>
         <button
           onClick={onResetWorkspace}
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-slate-950"
         >
           <RotateCcw size={16} />
-          Yangi CV
+          {copy.reset}
         </button>
       </div>
 
@@ -382,7 +372,7 @@ export const SimpleStudio = ({
               )}
             >
               <Icon size={16} />
-              <span className="truncate">{index + 1}. {item.label}</span>
+              <span className="truncate">{index + 1}. {copy.steps[item.id]}</span>
             </button>
           );
         })}
@@ -404,11 +394,11 @@ export const SimpleStudio = ({
               <div>
                 <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 text-center transition hover:border-slate-400">
                   {user.avatarUrl ? (
-                    <img src={user.avatarUrl} alt={user.fullName || "Profile"} className="h-full w-full rounded-lg object-cover" />
+                    <img src={user.avatarUrl} alt={user.fullName || copy.profile.photoAlt} className="h-full w-full rounded-lg object-cover" />
                   ) : (
                     <>
                       <Upload size={24} className="text-slate-500" />
-                      <span className="px-3 text-xs font-bold text-slate-500">Rasm yuklash</span>
+                      <span className="px-3 text-xs font-bold text-slate-500">{copy.profile.uploadPhoto}</span>
                     </>
                   )}
                   <input type="file" accept="image/*" onChange={handleAvatarUpload} className="sr-only" />
@@ -416,20 +406,20 @@ export const SimpleStudio = ({
               </div>
 
               <div className="grid gap-3">
-                <Field label="Ism familiya">
+                <Field label={copy.profile.fullName}>
                   <input
                     value={user.fullName}
                     onChange={(event) => updateUser({ fullName: event.target.value })}
-                    placeholder="Masalan: Sunnatulla Samandarov"
+                    placeholder={copy.profile.fullNamePlaceholder}
                     className="input-surface"
                   />
                 </Field>
 
-                <Field label="Qisqa bio">
+                <Field label={copy.profile.bio}>
                   <textarea
                     value={user.bio}
                     onChange={(event) => updateUser({ bio: event.target.value })}
-                    placeholder="Qaysi yo'nalishda ishlaysiz, qanday qiymat berasiz?"
+                    placeholder={copy.profile.bioPlaceholder}
                     className="input-surface min-h-28 resize-none py-3"
                   />
                 </Field>
@@ -437,17 +427,17 @@ export const SimpleStudio = ({
             </div>
 
             <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <Field label="Tajriba">
+              <Field label={copy.profile.experience}>
                 <textarea
                   value={user.experienceSummary || ""}
                   onChange={(event) => updateUser({ experienceSummary: event.target.value })}
-                  placeholder="Ish tajribangiz, rol, natija va yillar"
+                  placeholder={copy.profile.experiencePlaceholder}
                   className="input-surface min-h-28 resize-none py-3"
                 />
               </Field>
 
               <div className="grid gap-3">
-                <Field label="GitHub username">
+                <Field label={copy.profile.github}>
                   <div className="relative">
                     <Github className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
                     <input
@@ -459,7 +449,7 @@ export const SimpleStudio = ({
                   </div>
                 </Field>
 
-                <Field label="LinkedIn">
+                <Field label={copy.profile.linkedin}>
                   <input
                     value={user.socialLinks?.linkedin || ""}
                     onChange={(event) => updateSocialLink("linkedin", event.target.value)}
@@ -468,7 +458,7 @@ export const SimpleStudio = ({
                   />
                 </Field>
 
-                <Field label="Website">
+                <Field label={copy.profile.website}>
                   <input
                     value={user.socialLinks?.website || ""}
                     onChange={(event) => updateSocialLink("website", event.target.value)}
@@ -483,8 +473,8 @@ export const SimpleStudio = ({
           <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-base font-black text-slate-950">Loyihalar</h2>
-                <p className="mt-1 text-xs font-semibold text-slate-500">{visibleProjects.length} ta public loyiha</p>
+                <h2 className="text-base font-black text-slate-950">{copy.projects.title}</h2>
+                <p className="mt-1 text-xs font-semibold text-slate-500">{copy.projects.publicCount(visibleProjects.length)}</p>
               </div>
               <button
                 onClick={importGithubProjects}
@@ -492,7 +482,7 @@ export const SimpleStudio = ({
                 className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-xs font-black text-white transition hover:bg-slate-800 disabled:opacity-60"
               >
                 {isImporting ? <Loader2 size={15} className="animate-spin" /> : <Github size={15} />}
-                Import
+                {copy.projects.import}
               </button>
             </div>
 
@@ -500,46 +490,46 @@ export const SimpleStudio = ({
               <input
                 value={projectDraft.title}
                 onChange={(event) => updateDraft("title", event.target.value)}
-                placeholder="Loyiha nomi"
+                placeholder={copy.projects.titlePlaceholder}
                 className="input-surface"
               />
               <textarea
                 value={projectDraft.description}
                 onChange={(event) => updateDraft("description", event.target.value)}
-                placeholder="Loyiha nima qiladi va qanday muammoni hal qiladi?"
+                placeholder={copy.projects.descriptionPlaceholder}
                 className="input-surface min-h-24 resize-none py-3"
               />
               <div className="grid gap-3 sm:grid-cols-2">
                 <input
                   value={projectDraft.role}
                   onChange={(event) => updateDraft("role", event.target.value)}
-                  placeholder="Rol: Full-stack Developer"
+                  placeholder={copy.projects.rolePlaceholder}
                   className="input-surface"
                 />
                 <input
                   value={projectDraft.tags}
                   onChange={(event) => updateDraft("tags", event.target.value)}
-                  placeholder="React, Node, PostgreSQL"
+                  placeholder={copy.projects.tagsPlaceholder}
                   className="input-surface"
                 />
               </div>
               <textarea
                 value={projectDraft.impact}
                 onChange={(event) => updateDraft("impact", event.target.value)}
-                placeholder="Natija: tezlik, foyda, avtomatlashtirish, foydalanuvchi o'sishi"
+                placeholder={copy.projects.impactPlaceholder}
                 className="input-surface min-h-20 resize-none py-3"
               />
               <div className="grid gap-3 sm:grid-cols-2">
                 <input
                   value={projectDraft.url}
                   onChange={(event) => updateDraft("url", event.target.value)}
-                  placeholder="Demo link"
+                  placeholder={copy.projects.demoPlaceholder}
                   className="input-surface"
                 />
                 <input
                   value={projectDraft.repoUrl}
                   onChange={(event) => updateDraft("repoUrl", event.target.value)}
-                  placeholder="Repo link"
+                  placeholder={copy.projects.repoPlaceholder}
                   className="input-surface"
                 />
               </div>
@@ -548,7 +538,7 @@ export const SimpleStudio = ({
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-4 text-sm font-black text-slate-800 transition hover:border-slate-300 hover:bg-white"
               >
                 <Plus size={17} />
-                Loyiha qo'shish
+                {copy.projects.add}
               </button>
             </div>
           </div>
@@ -556,7 +546,7 @@ export const SimpleStudio = ({
       )}
 
       {step === "profile" && projects.length > 0 && (
-        <ProjectList projects={projects} onRemove={removeProject} onToggle={toggleProject} />
+        <ProjectList projects={projects} onRemove={removeProject} onToggle={toggleProject} copy={copy.projects} />
       )}
 
       {step === "template" && (
@@ -564,6 +554,7 @@ export const SimpleStudio = ({
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {TEMPLATE_OPTIONS.map((template) => {
               const isSelected = selectedTemplate === template.id;
+              const templateCopy = copy.templates[template.id as keyof typeof copy.templates];
 
               return (
                 <button
@@ -578,11 +569,11 @@ export const SimpleStudio = ({
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <h3 className="truncate text-sm font-black text-slate-950">{template.name}</h3>
-                      <p className="mt-1 text-xs font-semibold text-slate-500">{template.role}</p>
+                      <p className="mt-1 text-xs font-semibold text-slate-500">{templateCopy.role}</p>
                     </div>
                     {isSelected && <CheckCircle2 size={19} className="shrink-0 text-emerald-600" />}
                   </div>
-                  <p className="mt-4 text-xs font-bold uppercase tracking-widest text-slate-400">{template.tone}</p>
+                  <p className="mt-4 text-xs font-bold uppercase tracking-widest text-slate-400">{templateCopy.tone}</p>
                 </button>
               );
             })}
@@ -591,28 +582,28 @@ export const SimpleStudio = ({
           <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <div className={cn("h-24 rounded-md bg-gradient-to-br", selectedTemplateDetails.swatch)} />
             <h2 className="mt-4 text-lg font-black text-slate-950">{selectedTemplateDetails.name}</h2>
-            <p className="mt-1 text-sm font-semibold text-slate-500">{selectedTemplateDetails.role}</p>
+            <p className="mt-1 text-sm font-semibold text-slate-500">{selectedTemplateCopy.role}</p>
             <div className="mt-5 grid gap-2">
               <button
                 onClick={onOpenPortfolio}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-slate-950 px-4 text-sm font-black text-white transition hover:bg-slate-800"
               >
                 <Eye size={17} />
-                Portfolio ko'rish
+                {copy.actions.viewPortfolio}
               </button>
               <button
                 onClick={onOpenCv}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-black text-slate-800 transition hover:bg-slate-50"
               >
                 <FileText size={17} />
-                CV ko'rish
+                {copy.actions.viewCv}
               </button>
               <button
                 onClick={() => setStep("ready")}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-4 text-sm font-black text-slate-800 transition hover:bg-white"
               >
                 <CheckCircle2 size={17} />
-                Natijaga o'tish
+                {copy.actions.goReady}
               </button>
             </div>
           </div>
@@ -624,7 +615,7 @@ export const SimpleStudio = ({
           <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Tayyorlik</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">{copy.ready.title}</p>
                 <h2 className="mt-2 text-2xl font-black text-slate-950">{readyCount}/5</h2>
               </div>
               <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-slate-950 text-lg font-black text-white">
@@ -637,7 +628,7 @@ export const SimpleStudio = ({
                 <div key={item.label} className="flex items-center justify-between gap-3 rounded-md border border-slate-200 px-3 py-2">
                   <span className="text-sm font-bold text-slate-700">{item.label}</span>
                   <span className={cn("text-xs font-black", item.done ? "text-emerald-600" : "text-amber-600")}>
-                    {item.done ? "Tayyor" : "Kerak"}
+                    {item.done ? copy.ready.done : copy.ready.needed}
                   </span>
                 </div>
               ))}
@@ -650,21 +641,21 @@ export const SimpleStudio = ({
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-slate-950 px-4 text-sm font-black text-white transition hover:bg-slate-800 disabled:opacity-60"
               >
                 {isGeneratingCv ? <Loader2 size={17} className="animate-spin" /> : <Sparkles size={17} />}
-                AI CV yaratish
+                {copy.actions.generateAiCv}
               </button>
               <button
                 onClick={onOpenPortfolio}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-black text-slate-800 transition hover:bg-slate-50"
               >
                 <Eye size={17} />
-                Portfolio
+                {copy.actions.portfolio}
               </button>
               <button
                 onClick={onOpenCv}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-black text-slate-800 transition hover:bg-slate-50"
               >
                 <FileText size={17} />
-                CV preview
+                {copy.actions.cvPreview}
               </button>
               <button
                 onClick={publishPortfolio}
@@ -672,7 +663,7 @@ export const SimpleStudio = ({
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-4 text-sm font-black text-slate-800 transition hover:bg-white disabled:opacity-60"
               >
                 {isPublishing ? <Loader2 size={17} className="animate-spin" /> : <Share2 size={17} />}
-                Publish
+                {copy.actions.publish}
               </button>
             </div>
 
@@ -684,7 +675,7 @@ export const SimpleStudio = ({
                 className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm font-black text-emerald-800"
               >
                 <ExternalLink size={16} />
-                Portfolio link
+                {copy.actions.portfolioLink}
               </a>
             )}
           </div>
@@ -693,7 +684,7 @@ export const SimpleStudio = ({
             <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-slate-400">AI CV</p>
-                <h2 className="mt-1 text-lg font-black text-slate-950">{user.fullName || "Yangi nomzod"}</h2>
+                <h2 className="mt-1 text-lg font-black text-slate-950">{user.fullName || copy.ready.candidateFallback}</h2>
               </div>
               <button
                 onClick={copyAiCv}
@@ -701,7 +692,7 @@ export const SimpleStudio = ({
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 text-xs font-black text-slate-800 transition hover:bg-white disabled:opacity-50"
               >
                 <Clipboard size={15} />
-                {copyState === "copied" ? "Nusxalandi" : "Nusxalash"}
+                {copyState === "copied" ? copy.actions.copied : copy.actions.copy}
               </button>
             </div>
 
@@ -709,7 +700,7 @@ export const SimpleStudio = ({
               <div className="flex min-h-[330px] items-center justify-center">
                 <div className="text-center">
                   <Loader2 size={28} className="mx-auto animate-spin text-slate-500" />
-                  <p className="mt-3 text-sm font-bold text-slate-500">AI CV tayyorlanmoqda...</p>
+                  <p className="mt-3 text-sm font-bold text-slate-500">{copy.ready.generating}</p>
                 </div>
               </div>
             ) : aiCv ? (
@@ -720,7 +711,7 @@ export const SimpleStudio = ({
               <div className="flex min-h-[330px] items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 px-5 text-center">
                 <div>
                   <Sparkles size={28} className="mx-auto text-slate-400" />
-                  <p className="mt-3 text-sm font-bold text-slate-600">AI CV yaratish tugmasini bosing.</p>
+                  <p className="mt-3 text-sm font-bold text-slate-600">{copy.ready.emptyAi}</p>
                 </div>
               </div>
             )}
@@ -742,10 +733,12 @@ const ProjectList = ({
   projects,
   onRemove,
   onToggle,
+  copy,
 }: {
   projects: Project[];
   onRemove: (id: string) => void;
   onToggle: (id: string) => void;
+  copy: ReturnType<typeof getAppCopy>["studio"]["projects"];
 }) => (
   <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
     {projects
@@ -764,7 +757,7 @@ const ProjectList = ({
             <button
               onClick={() => onRemove(project.id)}
               className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
-              aria-label="Loyihani o'chirish"
+              aria-label={copy.delete}
             >
               <Trash2 size={16} />
             </button>
@@ -785,7 +778,7 @@ const ProjectList = ({
               project.isPublic === false ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700",
             )}
           >
-            {project.isPublic === false ? "Yashirilgan" : "Public"}
+            {project.isPublic === false ? copy.hidden : copy.visible}
           </button>
         </article>
       ))}

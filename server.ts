@@ -72,21 +72,96 @@ const getAiClient = () => {
   return apiKey ? new GoogleGenAI({ apiKey }) : null;
 };
 
-const fallbackTips = [
-  "Bio matnini natijaga yo'naltiring: tajriba, kuchli soha va biznes qiymatini bir jumlada ayting.",
-  "Har bir loyiha uchun muammo, yechim va natijani alohida yozing. Bu rekruterga ish hajmini tez tushuntiradi.",
-  "GitHub, LinkedIn va shaxsiy sayt linklarini to'ldiring. Ishonch signallari portfolio konversiyasini oshiradi.",
-];
+const fallbackTips: Record<AppLanguage, string[]> = {
+  uz: [
+    "Bio matnini natijaga yo'naltiring: tajriba, kuchli soha va biznes qiymatini bir jumlada ayting.",
+    "Har bir loyiha uchun muammo, yechim va natijani alohida yozing. Bu rekruterga ish hajmini tez tushuntiradi.",
+    "GitHub, LinkedIn va shaxsiy sayt linklarini to'ldiring. Ishonch signallari portfolio konversiyasini oshiradi.",
+  ],
+  en: [
+    "Make the bio outcome-oriented: experience, strongest domain, and business value in one clear paragraph.",
+    "For each project, separate the problem, solution, and result so recruiters understand the scope quickly.",
+    "Fill in GitHub, LinkedIn, and website links. Trust signals improve portfolio conversion.",
+  ],
+  ru: [
+    "Сделайте био ориентированным на результат: опыт, сильная область и бизнес-ценность в одном ясном абзаце.",
+    "Для каждого проекта отдельно укажите проблему, решение и результат, чтобы рекрутер быстро понял масштаб работы.",
+    "Заполните GitHub, LinkedIn и website. Сигналы доверия повышают конверсию портфолио.",
+  ],
+};
+
+const fallbackCvCopy: Record<AppLanguage, {
+  fallbackName: string;
+  links: string;
+  summary: string;
+  skills: string;
+  experience: string;
+  projects: string;
+  education: string;
+  languages: string;
+  emptyProjects: string;
+  emptyExperience: string;
+  impact: string;
+  stack: string;
+  link: string;
+}> = {
+  uz: {
+    fallbackName: "Professional Developer",
+    links: "GitHub / LinkedIn / Website",
+    summary: "Professional xulosa",
+    skills: "Ko'nikmalar",
+    experience: "Professional tajriba",
+    projects: "Tanlangan loyihalar",
+    education: "Ta'lim",
+    languages: "Tillar",
+    emptyProjects: "GitHub loyihalari import qilingandan keyin bu bo'lim real case studylar bilan to'ldiriladi.",
+    emptyExperience: "Project tajribasi GitHub importdan keyin ko'rinadi.",
+    impact: "Natija",
+    stack: "Tech stack",
+    link: "Link",
+  },
+  en: {
+    fallbackName: "Professional Developer",
+    links: "GitHub / LinkedIn / Website",
+    summary: "Professional Summary",
+    skills: "Core Skills",
+    experience: "Professional Experience",
+    projects: "Selected Projects",
+    education: "Education",
+    languages: "Languages",
+    emptyProjects: "This section will be filled with real case studies after importing GitHub projects.",
+    emptyExperience: "Project experience will appear after GitHub import.",
+    impact: "Impact",
+    stack: "Tech stack",
+    link: "Link",
+  },
+  ru: {
+    fallbackName: "Профессиональный разработчик",
+    links: "GitHub / LinkedIn / Website",
+    summary: "Профессиональное summary",
+    skills: "Ключевые навыки",
+    experience: "Профессиональный опыт",
+    projects: "Избранные проекты",
+    education: "Образование",
+    languages: "Языки",
+    emptyProjects: "Этот раздел заполнится реальными case studies после импорта GitHub-проектов.",
+    emptyExperience: "Проектный опыт появится после импорта GitHub.",
+    impact: "Результат",
+    stack: "Tech stack",
+    link: "Ссылка",
+  },
+};
 
 const buildFallbackCv = (user: User, projects: Project[], language: AppLanguage) => {
   const resume = buildResumeData(user, projects, language);
+  const copy = fallbackCvCopy[language] || fallbackCvCopy.uz;
   const projectLines = resume.projects.length
     ? resume.projects.slice(0, 5).map((project) => (
-      `### ${project.title}\n- ${project.role ? `${project.role}: ` : ""}${project.description}\n${project.impact ? `- Impact: ${project.impact}\n` : ""}- Tech stack: ${project.tags.join(", ") || "Open Source"}\n- Link: ${project.url || project.repoUrl || "portfolio orqali ko'rsatiladi"}`
+      `### ${project.title}\n- ${project.role ? `${project.role}: ` : ""}${project.description}\n${project.impact ? `- ${copy.impact}: ${project.impact}\n` : ""}- ${copy.stack}: ${project.tags.join(", ") || "Open Source"}\n- ${copy.link}: ${project.url || project.repoUrl || "portfolio"}`
     )).join("\n\n")
-    : "- GitHub loyihalari import qilingandan keyin bu bo'lim real case studylar bilan to'ldiriladi.";
+    : `- ${copy.emptyProjects}`;
 
-  return `# ${user.fullName || "Professional Developer"}\n${resume.headline}\n\n${resume.contactLinks.join(" | ") || "GitHub / LinkedIn / Website"}\n\n## Professional Summary\n${resume.summary}\n\n## Core Skills\n${resume.skills.map((skill) => `- ${skill}`).join("\n")}\n\n## Professional Experience\n${resume.experience.map((item) => `### ${item.role} - ${item.company}\n- ${item.description}`).join("\n\n") || "- Project experience will appear after GitHub import."}\n\n## Selected Projects\n${projectLines}\n\n## Education\n${resume.education.map((item) => `- ${item.degree}, ${item.institution} (${item.gradYear})`).join("\n")}\n\n## Languages\n${resume.languages.map((item) => `- ${item}`).join("\n")}`;
+  return `# ${user.fullName || copy.fallbackName}\n${resume.headline}\n\n${resume.contactLinks.join(" | ") || copy.links}\n\n## ${copy.summary}\n${resume.summary}\n\n## ${copy.skills}\n${resume.skills.map((skill) => `- ${skill}`).join("\n")}\n\n## ${copy.experience}\n${resume.experience.map((item) => `### ${item.role} - ${item.company}\n- ${item.description}`).join("\n\n") || `- ${copy.emptyExperience}`}\n\n## ${copy.projects}\n${projectLines}\n\n## ${copy.education}\n${resume.education.map((item) => `- ${item.degree}, ${item.institution} (${item.gradYear})`).join("\n")}\n\n## ${copy.languages}\n${resume.languages.map((item) => `- ${item}`).join("\n")}`;
 };
 
 const getResumeInput = (body: Record<string, unknown>) => {
@@ -163,7 +238,7 @@ async function startServer() {
   app.post("/api/ai/recommendations", async (req, res) => {
     const { user, projects, language } = getResumeInput(req.body);
     const ai = getAiClient();
-    if (!ai) return res.json({ tips: fallbackTips, source: "fallback" });
+    if (!ai) return res.json({ tips: fallbackTips[language], source: "fallback" });
 
     try {
       const response = await ai.models.generateContent({
@@ -183,10 +258,10 @@ async function startServer() {
 
       const text = response.text || "";
       const jsonMatch = text.match(/\[.*\]/s);
-      const tips = jsonMatch ? JSON.parse(jsonMatch[0]) : fallbackTips;
+      const tips = jsonMatch ? JSON.parse(jsonMatch[0]) : fallbackTips[language];
       res.json({ tips, source: "gemini" });
     } catch (error) {
-      res.json({ tips: fallbackTips, source: "fallback" });
+      res.json({ tips: fallbackTips[language], source: "fallback" });
     }
   });
 

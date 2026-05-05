@@ -31,15 +31,15 @@ interface ResumePreviewProps {
 
 const COPY = {
   uz: {
-    title: 'Modern CV templates',
+    title: 'Modern CV shablonlari',
     subtitle: "Rekruter, ATS va professional taqdimot uchun tayyor CV ko'rinishlari.",
     print: 'PDF / Chop etish',
     pdf: 'PDF yuklash',
     markdown: 'Markdown',
     json: 'JSON',
-    copyCv: 'CV nusxa',
+    copyCv: 'CV nusxalash',
     copied: 'Nusxalandi',
-    atsTitle: 'ATS readiness',
+    atsTitle: 'ATS tayyorlik',
     atsSubtitle: "CV rekruter va ATS ko'zi bilan tekshirildi.",
     summary: 'Professional xulosa',
     skills: "Ko'nikmalar",
@@ -49,6 +49,11 @@ const COPY = {
     languages: 'Tillar',
     certifications: 'Sertifikatlar',
     empty: "Loyihalar import qilingandan keyin bu bo'lim to'ldiriladi.",
+    contact: 'Aloqa',
+    fallbackName: 'Professional Developer',
+    linksFallback: 'GitHub / LinkedIn / Website',
+    timelineCv: 'Timeline CV',
+    executiveCv: 'Executive CV',
   },
   en: {
     title: 'Modern CV templates',
@@ -69,60 +74,81 @@ const COPY = {
     languages: 'Languages',
     certifications: 'Certifications',
     empty: 'This section will be filled after importing projects.',
+    contact: 'Contact',
+    fallbackName: 'Professional Developer',
+    linksFallback: 'GitHub / LinkedIn / Website',
+    timelineCv: 'Timeline CV',
+    executiveCv: 'Executive CV',
   },
   ru: {
-    title: 'Modern CV templates',
-    subtitle: 'Resume layouts prepared for recruiters, ATS, and polished presentation.',
-    print: 'PDF / Print',
-    pdf: 'Download PDF',
+    title: 'Современные CV-шаблоны',
+    subtitle: 'Макеты CV, подготовленные для рекрутеров, ATS и профессиональной презентации.',
+    print: 'PDF / Печать',
+    pdf: 'Скачать PDF',
     markdown: 'Markdown',
     json: 'JSON',
-    copyCv: 'Copy CV',
-    copied: 'Copied',
-    atsTitle: 'ATS readiness',
-    atsSubtitle: 'Resume checked for recruiter and ATS readability.',
-    summary: 'Professional Summary',
-    skills: 'Skills',
-    experience: 'Experience',
-    projects: 'Projects',
-    education: 'Education',
-    languages: 'Languages',
-    certifications: 'Certifications',
-    empty: 'This section will be filled after importing projects.',
+    copyCv: 'Копировать CV',
+    copied: 'Скопировано',
+    atsTitle: 'Готовность к ATS',
+    atsSubtitle: 'CV проверено на читаемость для рекрутера и ATS.',
+    summary: 'Профессиональное summary',
+    skills: 'Навыки',
+    experience: 'Опыт',
+    projects: 'Проекты',
+    education: 'Образование',
+    languages: 'Языки',
+    certifications: 'Сертификаты',
+    empty: 'Этот раздел заполнится после импорта проектов.',
+    contact: 'Контакты',
+    fallbackName: 'Профессиональный разработчик',
+    linksFallback: 'GitHub / LinkedIn / Website',
+    timelineCv: 'Timeline CV',
+    executiveCv: 'Executive CV',
   },
 };
 
 const CV_TEMPLATES: Array<{
   id: CvTemplateId;
-  name: string;
-  audience: string;
   icon: React.ElementType;
 }> = [
   {
     id: 'modern-sidebar',
-    name: 'Modern Sidebar',
-    audience: 'Tech CV / portfolio PDF',
     icon: Layers3,
   },
   {
     id: 'timeline-pro',
-    name: 'Timeline Pro',
-    audience: 'Experience-focused resume',
     icon: BriefcaseBusiness,
   },
   {
     id: 'executive-compact',
-    name: 'Executive Compact',
-    audience: 'Senior / architect profile',
     icon: Sparkles,
   },
   {
     id: 'ats-classic',
-    name: 'ATS Classic',
-    audience: 'Maximum ATS readability',
     icon: FileText,
   },
 ];
+
+const TEMPLATE_COPY: Record<AppLanguage, Record<CvTemplateId, { name: string; audience: string }>> = {
+  uz: {
+    'modern-sidebar': { name: 'Modern Sidebar', audience: 'Tech CV / portfolio PDF' },
+    'timeline-pro': { name: 'Timeline Pro', audience: "Tajribaga yo'naltirilgan resume" },
+    'executive-compact': { name: 'Executive Compact', audience: 'Senior / architect profil' },
+    'ats-classic': { name: 'ATS Classic', audience: "Maksimal ATS o'qilishi" },
+  },
+  en: {
+    'modern-sidebar': { name: 'Modern Sidebar', audience: 'Tech CV / portfolio PDF' },
+    'timeline-pro': { name: 'Timeline Pro', audience: 'Experience-focused resume' },
+    'executive-compact': { name: 'Executive Compact', audience: 'Senior / architect profile' },
+    'ats-classic': { name: 'ATS Classic', audience: 'Maximum ATS readability' },
+  },
+  ru: {
+    'modern-sidebar': { name: 'Modern Sidebar', audience: 'Tech CV / portfolio PDF' },
+    'timeline-pro': { name: 'Timeline Pro', audience: 'CV с акцентом на опыт' },
+    'executive-compact': { name: 'Executive Compact', audience: 'Senior / architect профиль' },
+    'ats-classic': { name: 'ATS Classic', audience: 'Максимальная читаемость ATS' },
+  },
+};
 
 export const ResumePreview = ({ user, projects, language }: ResumePreviewProps) => {
   const [templateId, setTemplateId] = useState<CvTemplateId>('modern-sidebar');
@@ -131,15 +157,16 @@ export const ResumePreview = ({ user, projects, language }: ResumePreviewProps) 
   const resume = buildResumeData(user, visibleProjects, language);
   const copy = COPY[language];
   const selectedTemplate = CV_TEMPLATES.find((template) => template.id === templateId) || CV_TEMPLATES[0];
+  const selectedTemplateCopy = TEMPLATE_COPY[language][selectedTemplate.id];
   const SelectedIcon = selectedTemplate.icon;
-  const markdown = buildResumeMarkdown(user, resume);
-  const ats = analyzeResume(resume, user, visibleProjects);
+  const markdown = buildResumeMarkdown(user, resume, language);
+  const ats = analyzeResume(resume, user, visibleProjects, language);
   const fileBaseName = getResumeFileBaseName(user);
 
   const handleDownloadPdf = async () => {
     setExportState('pdf');
     try {
-      await downloadResumePdf(user, resume);
+      await downloadResumePdf(user, resume, language);
     } finally {
       setExportState('idle');
     }
@@ -211,8 +238,8 @@ export const ResumePreview = ({ user, projects, language }: ResumePreviewProps) 
                   <Icon size={17} />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-sm font-bold">{template.name}</span>
-                  <span className={cn('mt-1 block text-xs leading-5', isSelected ? 'text-slate-300' : 'text-slate-500')}>{template.audience}</span>
+                  <span className="block text-sm font-bold">{TEMPLATE_COPY[language][template.id].name}</span>
+                  <span className={cn('mt-1 block text-xs leading-5', isSelected ? 'text-slate-300' : 'text-slate-500')}>{TEMPLATE_COPY[language][template.id].audience}</span>
                 </span>
               </button>
             );
@@ -221,7 +248,7 @@ export const ResumePreview = ({ user, projects, language }: ResumePreviewProps) 
 
         <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 shadow-sm">
           <SelectedIcon size={15} />
-          {selectedTemplate.name}
+          {selectedTemplateCopy.name}
         </div>
 
         <div className="mt-4 grid gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:grid-cols-[0.36fr_0.64fr]">
@@ -265,7 +292,7 @@ export const ResumePreview = ({ user, projects, language }: ResumePreviewProps) 
 
       <div className="no-print mx-auto mt-5 max-w-6xl rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600">
         <Download className="mr-2 inline" size={16} />
-        {selectedTemplate.name} / {LANGUAGE_NAMES[language]}
+        {selectedTemplateCopy.name} / {LANGUAGE_NAMES[language]}
       </div>
     </div>
   );
@@ -276,11 +303,11 @@ const AtsClassicTemplate = ({ user, resume, copy, language }: TemplateProps) => 
     <header className="border-b border-slate-300 pb-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <h2 className="text-4xl font-bold tracking-normal text-slate-950">{user.fullName || 'Professional Developer'}</h2>
+          <h2 className="text-4xl font-bold tracking-normal text-slate-950">{user.fullName || copy.fallbackName}</h2>
           <p className="mt-2 text-lg font-semibold text-slate-700">{resume.headline}</p>
           <p className="mt-1 text-sm text-slate-500">{LANGUAGE_NAMES[language]} CV</p>
         </div>
-        <ContactLinks links={resume.contactLinks} align="right" />
+        <ContactLinks links={resume.contactLinks} align="right" copy={copy} />
       </div>
     </header>
 
@@ -288,7 +315,7 @@ const AtsClassicTemplate = ({ user, resume, copy, language }: TemplateProps) => 
       <p className="text-sm leading-7 text-slate-700">{resume.summary}</p>
     </ResumeSection>
 
-    <SkillsBlock resume={resume} />
+    <SkillsBlock resume={resume} copy={copy} />
     <ExperienceBlock resume={resume} copy={copy} />
     <ProjectsBlock resume={resume} copy={copy} cardStyle="classic" />
     <EducationLanguagesBlock resume={resume} copy={copy} />
@@ -301,13 +328,13 @@ const ModernSidebarTemplate = ({ user, resume, copy, language }: TemplateProps) 
       <div className="mb-10 flex h-16 w-16 items-center justify-center rounded-xl bg-white text-2xl font-bold text-slate-950">
         {(user.fullName || 'D').charAt(0)}
       </div>
-      <h2 className="text-3xl font-semibold leading-tight tracking-normal">{user.fullName || 'Professional Developer'}</h2>
+      <h2 className="text-3xl font-semibold leading-tight tracking-normal">{user.fullName || copy.fallbackName}</h2>
       <p className="mt-3 text-sm font-semibold uppercase tracking-widest text-blue-300">{resume.headline}</p>
       <p className="mt-2 text-xs font-medium text-slate-400">{LANGUAGE_NAMES[language]} CV</p>
 
       <div className="mt-10">
-        <SidebarTitle>Contact</SidebarTitle>
-        <ContactLinks links={resume.contactLinks} variant="dark" />
+        <SidebarTitle>{copy.contact}</SidebarTitle>
+        <ContactLinks links={resume.contactLinks} variant="dark" copy={copy} />
       </div>
 
       <div className="mt-10">
@@ -344,15 +371,15 @@ const TimelineProTemplate = ({ user, resume, copy, language }: TemplateProps) =>
       <div>
         <p className="mb-4 inline-flex items-center gap-2 rounded-md bg-emerald-50 px-3 py-1 text-xs font-bold uppercase tracking-widest text-emerald-700">
           <CheckCircle2 size={14} />
-          Timeline CV
+          {copy.timelineCv}
         </p>
-        <h2 className="text-5xl font-semibold leading-tight tracking-normal text-slate-950">{user.fullName || 'Professional Developer'}</h2>
+        <h2 className="text-5xl font-semibold leading-tight tracking-normal text-slate-950">{user.fullName || copy.fallbackName}</h2>
         <p className="mt-3 text-lg font-semibold text-slate-700">{resume.headline}</p>
         <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">{resume.summary}</p>
       </div>
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
         <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">{LANGUAGE_NAMES[language]} CV</p>
-        <ContactLinks links={resume.contactLinks} />
+        <ContactLinks links={resume.contactLinks} copy={copy} />
       </div>
     </header>
 
@@ -389,13 +416,13 @@ const ExecutiveCompactTemplate = ({ user, resume, copy, language }: TemplateProp
     <header className="border-b-4 border-slate-950 pb-8">
       <div className="grid gap-6 md:grid-cols-[1fr_0.38fr] md:items-start">
         <div>
-          <p className="mb-4 text-xs font-bold uppercase tracking-[0.28em] text-amber-700">Executive CV</p>
-          <h2 className="text-5xl font-semibold leading-tight tracking-normal text-slate-950">{user.fullName || 'Professional Developer'}</h2>
+          <p className="mb-4 text-xs font-bold uppercase tracking-[0.28em] text-amber-700">{copy.executiveCv}</p>
+          <h2 className="text-5xl font-semibold leading-tight tracking-normal text-slate-950">{user.fullName || copy.fallbackName}</h2>
           <p className="mt-3 text-xl font-semibold text-slate-700">{resume.headline}</p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
           <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">{LANGUAGE_NAMES[language]}</p>
-          <ContactLinks links={resume.contactLinks} />
+          <ContactLinks links={resume.contactLinks} copy={copy} />
         </div>
       </div>
       <p className="mt-7 max-w-4xl text-base leading-8 text-slate-700">{resume.summary}</p>
@@ -426,10 +453,12 @@ const ContactLinks = ({
   links,
   align = 'left',
   variant = 'light',
+  copy,
 }: {
   links: string[];
   align?: 'left' | 'right';
   variant?: 'light' | 'dark';
+  copy: typeof COPY['uz'];
 }) => (
   <div className={cn('space-y-1 text-sm font-medium', align === 'right' && 'md:text-right', variant === 'dark' ? 'text-slate-300' : 'text-slate-600')}>
     {links.length > 0 ? links.map((link) => (
@@ -444,7 +473,7 @@ const ContactLinks = ({
         {link.replace(/^https?:\/\//, '')}
       </a>
     )) : (
-      <span>GitHub / LinkedIn / Website</span>
+      <span>{copy.linksFallback}</span>
     )}
   </div>
 );
@@ -472,8 +501,8 @@ const SidebarTitle = ({ children }: { children: React.ReactNode }) => (
   <h3 className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">{children}</h3>
 );
 
-const SkillsBlock = ({ resume }: { resume: ResumeData }) => (
-  <ResumeSection title="Skills">
+const SkillsBlock = ({ resume, copy }: { resume: ResumeData; copy: typeof COPY['uz'] }) => (
+  <ResumeSection title={copy.skills}>
     <div className="flex flex-wrap gap-2">
       {resume.skills.map((skill) => (
         <span key={skill} className="rounded border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700">

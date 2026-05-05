@@ -2,6 +2,7 @@ import React from "react";
 import { AppLanguage, User, Project } from "../../types";
 import { Github, Globe, Mail, MapPin, ExternalLink, Linkedin, Twitter, MessageCircle, Rocket, ArrowRight, Terminal, Code2, Cpu, Zap, LayoutGrid, Monitor, Command, Hash, ChevronRight, CheckCircle2, FileText } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { getAppCopy } from "../../lib/i18n";
 import { motion } from "motion/react";
 
 interface PreviewProps {
@@ -14,35 +15,36 @@ interface PreviewProps {
 export const PortfolioPreview = ({ user, projects, templateId = "minimalist", language = "uz" }: PreviewProps) => {
   const currentYear = new Date().getFullYear();
   const visibleProjects = projects.filter((project) => project.isPublic !== false);
+  const copy = getAppCopy(language).portfolio;
 
   if (visibleProjects.length === 0) {
-    return <EmptyPortfolioPreview user={user} templateId={templateId} currentYear={currentYear} language={language} />;
+    return <EmptyPortfolioPreview user={user} templateId={templateId} currentYear={currentYear} language={language} copy={copy} />;
   }
 
   switch (templateId) {
     case "premium-developer":
-      return <PremiumDeveloperLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
+      return <PremiumDeveloperLayout user={user} projects={visibleProjects} currentYear={currentYear} copy={copy} />;
     case "case-study-pro":
-      return <CaseStudyProLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
+      return <CaseStudyProLayout user={user} projects={visibleProjects} currentYear={currentYear} copy={copy} />;
     case "executive-architect":
-      return <ExecutiveArchitectLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
+      return <ExecutiveArchitectLayout user={user} projects={visibleProjects} currentYear={currentYear} copy={copy} />;
     case "modern-minimalist":
-      return <ModernMinimalistLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
+      return <ModernMinimalistLayout user={user} projects={visibleProjects} currentYear={currentYear} copy={copy} />;
     case "modern-technical":
-      return <ModernTechnicalLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
+      return <ModernTechnicalLayout user={user} projects={visibleProjects} currentYear={currentYear} copy={copy} />;
     case "dark":
-      return <DarkTechnicalLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
+      return <DarkTechnicalLayout user={user} projects={visibleProjects} currentYear={currentYear} copy={copy} />;
     case "bento":
-      return <ModernBentoLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
+      return <ModernBentoLayout user={user} projects={visibleProjects} currentYear={currentYear} copy={copy} />;
     case "brutalist":
-      return <NeoBrutalistLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
+      return <NeoBrutalistLayout user={user} projects={visibleProjects} currentYear={currentYear} copy={copy} />;
     case "terminal":
-      return <RetroTerminalLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
+      return <RetroTerminalLayout user={user} projects={visibleProjects} currentYear={currentYear} copy={copy} />;
     case "serif":
-      return <ProfessionalSerifLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
+      return <ProfessionalSerifLayout user={user} projects={visibleProjects} currentYear={currentYear} copy={copy} />;
     case "minimalist":
     default:
-      return <MinimalistLayout user={user} projects={visibleProjects} currentYear={currentYear} />;
+      return <MinimalistLayout user={user} projects={visibleProjects} currentYear={currentYear} copy={copy} />;
   }
 };
 
@@ -60,36 +62,36 @@ const TEMPLATE_LABELS: Record<string, string> = {
   serif: "Professional Serif",
 };
 
-const EmptyPortfolioPreview = ({ user, templateId, currentYear, language }: any) => (
+const EmptyPortfolioPreview = ({ user, templateId, currentYear, language, copy }: any) => (
   <div className="min-h-screen bg-white text-slate-950">
     <header className="border-b border-slate-200">
       <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 md:grid-cols-[1.1fr_0.9fr] md:items-end md:py-24">
         <div>
           <p className="mb-5 inline-flex items-center gap-2 rounded-md border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-emerald-700">
             <CheckCircle2 size={14} />
-            {TEMPLATE_LABELS[templateId] || "Professional template"} / {String(language).toUpperCase()}
+            {TEMPLATE_LABELS[templateId] || copy.generic.professionalDeveloper} / {String(language).toUpperCase()}
           </p>
           <h1 className="max-w-4xl text-4xl font-semibold tracking-normal text-slate-950 md:text-6xl">
-            {user.fullName || "Your Name"}
+            {user.fullName || copy.emptyName}
           </h1>
           <p className="mt-6 max-w-2xl text-base leading-7 text-slate-600 md:text-lg">
-            {user.bio || "Kuchli professional summary kiritilganda, bu yer rekruter uchun asosiy positioning blokiga aylanadi."}
+            {user.bio || copy.emptyBio}
           </p>
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
           <div className="mb-4 flex items-center justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Portfolio holati</p>
-              <h2 className="mt-1 text-xl font-semibold text-slate-950">Content review kerak</h2>
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">{copy.emptyStatus}</p>
+              <h2 className="mt-1 text-xl font-semibold text-slate-950">{copy.emptyStatusTitle}</h2>
             </div>
             <FileText size={22} className="text-blue-700" />
           </div>
           <div className="space-y-3 text-sm text-slate-600">
-            <EmptyChecklistItem done={Boolean(user.fullName)} label="Ism va headline kiritilgan" />
-            <EmptyChecklistItem done={user.bio?.length > 80} label="Bio yetarlicha kuchli" />
-            <EmptyChecklistItem done={Boolean(user.githubUsername)} label="GitHub ulangan" />
-            <EmptyChecklistItem done={false} label="Kamida 3 ta loyiha tanlangan" />
+            <EmptyChecklistItem done={Boolean(user.fullName)} label={copy.emptyChecklist.name} copy={copy} />
+            <EmptyChecklistItem done={user.bio?.length > 80} label={copy.emptyChecklist.bio} copy={copy} />
+            <EmptyChecklistItem done={Boolean(user.githubUsername)} label={copy.emptyChecklist.github} copy={copy} />
+            <EmptyChecklistItem done={false} label={copy.emptyChecklist.projects} copy={copy} />
           </div>
         </div>
       </div>
@@ -99,8 +101,8 @@ const EmptyPortfolioPreview = ({ user, templateId, currentYear, language }: any)
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm md:col-span-2">
         <div className="mb-6 flex items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Selected works</p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-normal text-slate-950">Loyihalar hali import qilinmagan</h2>
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">{copy.emptyWorks}</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-normal text-slate-950">{copy.emptyProjectsTitle}</h2>
           </div>
           <Rocket size={22} className="text-blue-700" />
         </div>
@@ -108,10 +110,10 @@ const EmptyPortfolioPreview = ({ user, templateId, currentYear, language }: any)
           {["Production app", "Automation system"].map((title, index) => (
             <div key={title} className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-5">
               <div className="mb-5 aspect-[16/10] rounded-lg border border-slate-200 bg-white" />
-              <p className="text-xs font-semibold uppercase tracking-widest text-blue-700">Case study {index + 1}</p>
+              <p className="text-xs font-semibold uppercase tracking-widest text-blue-700">{copy.caseStudy} {index + 1}</p>
               <h3 className="mt-2 text-lg font-semibold text-slate-950">{title}</h3>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                GitHub importdan keyin bu joyda loyiha maqsadi, texnologiyalar va natija ko'rinadi.
+                {copy.emptyProjectText}
               </p>
             </div>
           ))}
@@ -119,7 +121,7 @@ const EmptyPortfolioPreview = ({ user, templateId, currentYear, language }: any)
       </section>
 
       <aside className="rounded-lg border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Contact signal</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">{copy.contactSignal}</p>
         <div className="mt-5 space-y-3">
           {user.githubUsername && (
             <a href={`https://github.com/${user.githubUsername}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-lg bg-white/5 px-3 py-3 text-sm font-semibold text-slate-100 hover:bg-white/10">
@@ -141,7 +143,7 @@ const EmptyPortfolioPreview = ({ user, templateId, currentYear, language }: any)
           )}
           {!user.githubUsername && !user.socialLinks?.linkedin && !user.socialLinks?.website && (
             <p className="rounded-lg border border-white/10 bg-white/5 p-4 text-sm leading-6 text-slate-300">
-              Aloqa linklari qo'shilganda bu panel rekruter uchun tezkor ishonch nuqtasiga aylanadi.
+              {copy.contactEmpty}
             </p>
           )}
         </div>
@@ -154,26 +156,26 @@ const EmptyPortfolioPreview = ({ user, templateId, currentYear, language }: any)
   </div>
 );
 
-const EmptyChecklistItem = ({ done, label }: { done: boolean; label: string }) => (
+const EmptyChecklistItem = ({ done, label, copy }: { done: boolean; label: string; copy: any }) => (
   <div className="flex items-center justify-between gap-4">
     <span>{label}</span>
     <span className={done ? "font-semibold text-emerald-700" : "font-semibold text-slate-400"}>
-      {done ? "Tayyor" : "Kerak"}
+      {done ? copy.done : copy.needed}
     </span>
   </div>
 );
 
-const PremiumDeveloperLayout = ({ user, projects, currentYear }: any) => (
+const PremiumDeveloperLayout = ({ user, projects, currentYear, copy }: any) => (
   <div className="min-h-screen bg-[#f7f8fb] text-slate-950">
     <header className="border-b border-slate-200 bg-white">
       <div className="mx-auto grid max-w-7xl gap-10 px-6 py-16 md:grid-cols-[1.05fr_0.95fr] md:items-center md:py-24">
         <div>
           <p className="mb-5 inline-flex items-center gap-2 rounded-md border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-widest text-blue-700">
             <CheckCircle2 size={14} />
-            Available for product work
+            {copy.available}
           </p>
           <h1 className="max-w-4xl text-4xl font-semibold leading-tight tracking-normal md:text-7xl">
-            {user.fullName || "Professional Developer"}
+            {user.fullName || copy.generic.professionalDeveloper}
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
             {user.bio}
@@ -196,8 +198,8 @@ const PremiumDeveloperLayout = ({ user, projects, currentYear }: any) => (
 
         <div className="rounded-2xl border border-slate-200 bg-slate-950 p-5 shadow-2xl shadow-slate-300/60">
           <div className="mb-4 flex items-center justify-between text-xs font-semibold uppercase tracking-widest text-slate-400">
-            <span>Portfolio signal</span>
-            <span>{projects.length} projects</span>
+            <span>{copy.portfolioSignal}</span>
+            <span>{copy.projectsCount(projects.length)}</span>
           </div>
           <div className="grid gap-3">
             {projects.slice(0, 3).map((project: any) => (
@@ -222,10 +224,10 @@ const PremiumDeveloperLayout = ({ user, projects, currentYear }: any) => (
     <main className="mx-auto max-w-7xl px-6 py-16">
       <div className="mb-10 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-blue-700">Selected work</p>
-          <h2 className="mt-2 text-3xl font-semibold tracking-normal">Projects built with clarity and outcome.</h2>
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-blue-700">{copy.selectedWork}</p>
+          <h2 className="mt-2 text-3xl font-semibold tracking-normal">{copy.selectedWorkTitle}</h2>
         </div>
-        <p className="max-w-xl text-sm leading-6 text-slate-500">Each project highlights problem solving, technical execution, and measurable value.</p>
+        <p className="max-w-xl text-sm leading-6 text-slate-500">{copy.selectedWorkText}</p>
       </div>
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
         {projects.map((project: any) => (
@@ -239,7 +241,7 @@ const PremiumDeveloperLayout = ({ user, projects, currentYear }: any) => (
                 </div>
               )}
             </div>
-            <p className="text-xs font-bold uppercase tracking-widest text-blue-700">{project.role || "Case study"}</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-blue-700">{project.role || copy.caseStudy}</p>
             <h3 className="mt-2 text-xl font-semibold text-slate-950">{project.title}</h3>
             <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">{project.description}</p>
             {project.impact && <p className="mt-3 text-sm font-semibold leading-6 text-slate-800">{project.impact}</p>}
@@ -254,18 +256,18 @@ const PremiumDeveloperLayout = ({ user, projects, currentYear }: any) => (
   </div>
 );
 
-const CaseStudyProLayout = ({ user, projects, currentYear }: any) => (
+const CaseStudyProLayout = ({ user, projects, currentYear, copy }: any) => (
   <div className="min-h-screen bg-[#fffdf7] text-[#151515]">
     <header className="mx-auto max-w-6xl px-6 py-16 md:py-24">
       <div className="max-w-4xl">
-        <p className="mb-5 text-xs font-bold uppercase tracking-[0.28em] text-amber-700">Case study portfolio</p>
-        <h1 className="text-5xl font-semibold leading-tight tracking-normal md:text-7xl">{user.fullName || "Product Builder"}</h1>
+        <p className="mb-5 text-xs font-bold uppercase tracking-[0.28em] text-amber-700">{copy.labels.caseStudyPortfolio}</p>
+        <h1 className="text-5xl font-semibold leading-tight tracking-normal md:text-7xl">{user.fullName || copy.generic.productBuilder}</h1>
         <p className="mt-6 max-w-3xl text-xl leading-9 text-stone-600">{user.bio}</p>
       </div>
       <div className="mt-12 grid gap-4 border-y border-stone-200 py-6 md:grid-cols-3">
-        <Stat label="Selected cases" value={projects.length} />
-        <Stat label="Primary focus" value="Product delivery" />
-        <Stat label="Stack signal" value={Array.from(new Set(projects.flatMap((p: any) => p.tags))).slice(0, 3).join(" / ") || "Full-stack"} />
+        <Stat label={copy.stats.selectedCases} value={projects.length} copy={copy} />
+        <Stat label={copy.stats.primaryFocus} value={copy.stats.productDelivery} copy={copy} />
+        <Stat label={copy.stats.stackSignal} value={Array.from(new Set(projects.flatMap((p: any) => p.tags))).slice(0, 3).join(" / ") || "Full-stack"} copy={copy} />
       </div>
     </header>
 
@@ -284,7 +286,7 @@ const CaseStudyProLayout = ({ user, projects, currentYear }: any) => (
             </div>
             <div className="flex flex-col justify-between">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.24em] text-amber-700">Case {index + 1} / {project.role || "Project"}</p>
+                <p className="text-xs font-bold uppercase tracking-[0.24em] text-amber-700">{copy.caseStudy} {index + 1} / {project.role || copy.generic.primaryRole}</p>
                 <h2 className="mt-3 text-3xl font-semibold tracking-normal md:text-4xl">{project.title}</h2>
                 <p className="mt-5 text-base leading-8 text-stone-600">{project.description}</p>
                 {project.impact && (
@@ -300,7 +302,7 @@ const CaseStudyProLayout = ({ user, projects, currentYear }: any) => (
                   ))}
                 </div>
                 <a href={project.url || project.repoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-bold text-stone-950 hover:text-amber-700">
-                  View project <ArrowRight size={16} />
+                  {copy.viewProject} <ArrowRight size={16} />
                 </a>
               </div>
             </div>
@@ -310,26 +312,26 @@ const CaseStudyProLayout = ({ user, projects, currentYear }: any) => (
     </main>
 
     <footer className="border-t border-stone-200 px-6 py-8 text-center text-xs font-bold uppercase tracking-widest text-stone-400">
-      Case studies / {currentYear}
+      {copy.labels.caseStudyPortfolio} / {currentYear}
     </footer>
   </div>
 );
 
-const ExecutiveArchitectLayout = ({ user, projects, currentYear }: any) => (
+const ExecutiveArchitectLayout = ({ user, projects, currentYear, copy }: any) => (
   <div className="min-h-screen bg-[#f4f1ec] text-[#191714]">
     <header className="mx-auto max-w-7xl px-6 py-16 md:py-24">
       <div className="grid gap-10 md:grid-cols-[0.85fr_1.15fr] md:items-end">
         <div className="rounded-2xl border border-stone-300 bg-[#191714] p-6 text-white">
-          <p className="text-xs font-bold uppercase tracking-[0.28em] text-stone-400">Executive profile</p>
+          <p className="text-xs font-bold uppercase tracking-[0.28em] text-stone-400">{copy.labels.executiveProfile}</p>
           <div className="mt-10 space-y-4">
-            <Stat label="Portfolio projects" value={projects.length} dark />
-            <Stat label="Delivery style" value="Architecture / Product" dark />
-            <Stat label="Availability" value="Selective engagements" dark />
+            <Stat label={copy.stats.portfolioProjects} value={projects.length} dark copy={copy} />
+            <Stat label={copy.stats.deliveryStyle} value={copy.stats.architectureProduct} dark copy={copy} />
+            <Stat label={copy.stats.availability} value={copy.stats.selective} dark copy={copy} />
           </div>
         </div>
         <div>
-          <p className="mb-5 text-xs font-bold uppercase tracking-[0.28em] text-stone-500">Solution architect portfolio</p>
-          <h1 className="text-5xl font-semibold leading-tight tracking-normal md:text-7xl">{user.fullName || "Solution Architect"}</h1>
+          <p className="mb-5 text-xs font-bold uppercase tracking-[0.28em] text-stone-500">{copy.labels.solutionArchitectPortfolio}</p>
+          <h1 className="text-5xl font-semibold leading-tight tracking-normal md:text-7xl">{user.fullName || copy.generic.solutionArchitect}</h1>
           <p className="mt-6 max-w-3xl text-lg leading-8 text-stone-600">{user.bio}</p>
           <div className="mt-8 flex flex-wrap gap-3">
             {user.githubUsername && <a href={`https://github.com/${user.githubUsername}`} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-[#191714] px-5 py-3 text-sm font-semibold text-white">GitHub</a>}
@@ -345,7 +347,7 @@ const ExecutiveArchitectLayout = ({ user, projects, currentYear }: any) => (
           <article key={project.id} className="rounded-2xl border border-stone-300 bg-[#fbfaf7] p-7">
             <div className="mb-8 flex items-start justify-between gap-6">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-stone-500">{project.role || "Architecture case"}</p>
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-stone-500">{project.role || copy.labels.architectureCase}</p>
                 <h2 className="mt-3 text-2xl font-semibold tracking-normal">{project.title}</h2>
               </div>
               <Cpu className="shrink-0 text-stone-400" size={24} />
@@ -368,14 +370,14 @@ const ExecutiveArchitectLayout = ({ user, projects, currentYear }: any) => (
   </div>
 );
 
-const Stat = ({ label, value, dark = false }: { label: string; value: any; dark?: boolean }) => (
+const Stat = ({ label, value, dark = false, copy }: { label: string; value: any; dark?: boolean; copy?: any }) => (
   <div>
     <p className={cn("text-xs font-bold uppercase tracking-[0.2em]", dark ? "text-stone-500" : "text-stone-400")}>{label}</p>
-    <p className={cn("mt-2 text-lg font-semibold", dark ? "text-white" : "text-stone-900")}>{value || "Ready"}</p>
+    <p className={cn("mt-2 text-lg font-semibold", dark ? "text-white" : "text-stone-900")}>{value || copy?.done || "Ready"}</p>
   </div>
 );
 
-const ModernMinimalistLayout = ({ user, projects, currentYear }: any) => (
+const ModernMinimalistLayout = ({ user, projects, currentYear, copy }: any) => (
   <motion.div 
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
@@ -402,7 +404,7 @@ const ModernMinimalistLayout = ({ user, projects, currentYear }: any) => (
         transition={{ delay: 0.3 }}
         className="text-5xl md:text-7xl font-light tracking-normal mb-8"
       >
-        {user.fullName || "Your Name"}
+        {user.fullName || copy.emptyName}
       </motion.h1>
       <motion.p 
         initial={{ y: 20, opacity: 0 }}
@@ -468,7 +470,7 @@ const ModernMinimalistLayout = ({ user, projects, currentYear }: any) => (
               </a>
             </div>
             <div className="max-w-sm">
-              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-indigo-500 mb-4 block">Project {idx + 1}</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-indigo-500 mb-4 block">{copy.generic.primaryRole} {idx + 1}</span>
               <h3 className="text-3xl font-light mb-4">{project.title}</h3>
               <p className="text-slate-500 leading-relaxed mb-6 font-light truncate-3-lines">{project.description}</p>
               <div className="flex flex-wrap gap-2">
@@ -492,7 +494,7 @@ const ModernMinimalistLayout = ({ user, projects, currentYear }: any) => (
   </motion.div>
 );
 
-const ModernTechnicalLayout = ({ user, projects, currentYear }: any) => (
+const ModernTechnicalLayout = ({ user, projects, currentYear, copy }: any) => (
   <div className="bg-[#0f1115] min-h-screen text-slate-300 font-sans selection:bg-indigo-500/30">
     <div className="max-w-6xl mx-auto px-6 py-20">
       <header className="mb-32 relative">
@@ -506,7 +508,7 @@ const ModernTechnicalLayout = ({ user, projects, currentYear }: any) => (
               <span className="text-xs font-black uppercase tracking-[0.4em] text-slate-500">System.Developer.Profile</span>
             </div>
             <h1 className="text-5xl md:text-8xl font-black text-white mb-8 tracking-normal">
-              {user.fullName || "Samandarov S."}
+              {user.fullName || copy.generic.professionalDeveloper}
             </h1>
             <p className="text-xl leading-relaxed text-slate-400 font-medium max-w-xl">
               {user.bio}
@@ -526,10 +528,10 @@ const ModernTechnicalLayout = ({ user, projects, currentYear }: any) => (
               )}
             </div>
             <div className="bg-slate-800/50 border border-slate-700/50 p-4 rounded-2xl backdrop-blur-md">
-              <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Technical Status</div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">{copy.labels.technicalStatus}</div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-xs font-bold text-white uppercase tracking-wider">Available for new projects</span>
+                <span className="text-xs font-bold text-white uppercase tracking-wider">{copy.available}</span>
               </div>
             </div>
           </div>
@@ -540,10 +542,10 @@ const ModernTechnicalLayout = ({ user, projects, currentYear }: any) => (
         <div className="flex items-center justify-between mb-16">
           <div>
             <h2 className="text-2xl font-black text-white uppercase tracking-normal flex items-center gap-3">
-              <span className="w-8 h-px bg-indigo-500" /> Featured Projects
+              <span className="w-8 h-px bg-indigo-500" /> {copy.selectedWork}
             </h2>
           </div>
-          <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">{projects.length} Total Modules</div>
+          <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">{copy.projectsCount(projects.length)}</div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -597,10 +599,10 @@ const ModernTechnicalLayout = ({ user, projects, currentYear }: any) => (
       <section className="bg-slate-900/40 border border-slate-800/60 rounded-[3rem] p-10 md:p-20 text-center relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-[100px]" />
         <div className="relative z-10">
-          <h2 className="text-3xl md:text-5xl font-black text-white mb-8 tracking-normal uppercase">Ready to start a mission?</h2>
-          <p className="text-slate-400 mb-12 max-w-xl mx-auto font-medium">Have a complex technical problem that needs a robust solution? I'm ready to contribute to your core stack.</p>
+          <h2 className="text-3xl md:text-5xl font-black text-white mb-8 tracking-normal uppercase">{copy.selectedWorkTitle}</h2>
+          <p className="text-slate-400 mb-12 max-w-xl mx-auto font-medium">{copy.selectedWorkText}</p>
           <a href={`mailto:hello@devport.uz`} className="inline-flex items-center gap-4 bg-indigo-600 text-white px-10 py-5 rounded-[2rem] font-black uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-2xl shadow-indigo-600/20 active:scale-95">
-            Initialize Contact <ChevronRight size={20} />
+            {copy.labels.contact} <ChevronRight size={20} />
           </a>
         </div>
       </section>
@@ -617,7 +619,7 @@ const ModernTechnicalLayout = ({ user, projects, currentYear }: any) => (
   </div>
 );
 
-const MinimalistLayout = ({ user, projects, currentYear }: any) => (
+const MinimalistLayout = ({ user, projects, currentYear, copy }: any) => (
   <div className="bg-white min-h-screen text-slate-900 font-sans selection:bg-indigo-100">
     <header id="top" className="max-w-2xl mx-auto pt-16 pb-8 px-6">
       <div className="w-24 h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl mb-8 shadow-xl shadow-indigo-100 flex items-center justify-center text-white text-3xl font-black">
@@ -625,7 +627,7 @@ const MinimalistLayout = ({ user, projects, currentYear }: any) => (
       </div>
       
       <h1 className="text-4xl md:text-5xl font-black tracking-normal mb-4 text-slate-900">
-        {user.fullName || "Ismingiz"}
+        {user.fullName || copy.emptyName}
       </h1>
       <p className="text-lg text-slate-600 max-w-xl leading-relaxed font-medium">
         {user.bio}
@@ -654,9 +656,9 @@ const MinimalistLayout = ({ user, projects, currentYear }: any) => (
             <MapPin size={18} />
           </div>
           <div className="flex-1">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block">Loyiha soni</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block">{copy.stats.portfolioProjects}</span>
             <a href="#projects" className="text-sm font-bold text-indigo-600 hover:underline inline-flex items-center gap-1 group">
-              {projects.length} ta loyiha
+              {copy.projectsCount(projects.length)}
               <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
             </a>
           </div>
@@ -666,8 +668,8 @@ const MinimalistLayout = ({ user, projects, currentYear }: any) => (
             <Globe size={18} />
           </div>
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block">Veb-sayt</span>
-            <span className="text-sm font-bold text-slate-400 italic">Mavjud emas</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block">Website</span>
+            <span className="text-sm font-bold text-slate-400 italic">{user.socialLinks?.website ? "Online" : copy.needed}</span>
           </div>
         </div>
       </div>
@@ -675,7 +677,7 @@ const MinimalistLayout = ({ user, projects, currentYear }: any) => (
 
     <section id="projects" className="max-w-2xl mx-auto py-8 px-6">
       <div className="flex items-center justify-between mb-8">
-        <h2 className="text-2xl font-black tracking-normal flex items-center gap-2">Loyihalar</h2>
+        <h2 className="text-2xl font-black tracking-normal flex items-center gap-2">{copy.selectedWork}</h2>
       </div>
       <div className="space-y-20">
         {[...projects].sort((a: any, b: any) => a.order - b.order).map((project: any) => (
@@ -720,16 +722,16 @@ const MinimalistLayout = ({ user, projects, currentYear }: any) => (
   </div>
 );
 
-const DarkTechnicalLayout = ({ user, projects, currentYear }: any) => (
+const DarkTechnicalLayout = ({ user, projects, currentYear, copy }: any) => (
   <div className="bg-[#0a0a0c] min-h-screen text-slate-400 font-mono selection:bg-indigo-500/30">
     <div className="max-w-3xl mx-auto px-6 py-20">
       <header className="mb-20">
         <div className="flex items-center gap-4 mb-6">
           <Terminal size={24} className="text-indigo-500" />
-          <span className="text-xs font-bold uppercase tracking-[0.3em] text-slate-600">User Identity Profile</span>
+          <span className="text-xs font-bold uppercase tracking-[0.3em] text-slate-600">{copy.labels.technicalStatus}</span>
         </div>
         <h1 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-normal">
-          {user.fullName || "System Admin"}
+          {user.fullName || copy.generic.professionalDeveloper}
         </h1>
         <div className="p-6 bg-slate-900/50 border border-slate-800 rounded-sm relative overflow-hidden group mb-10">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">
@@ -754,7 +756,7 @@ const DarkTechnicalLayout = ({ user, projects, currentYear }: any) => (
       <section>
         <div className="flex items-center gap-4 mb-12">
           <Code2 size={24} className="text-indigo-500" />
-          <h2 className="text-lg font-black text-white uppercase tracking-widest">Repository Archive</h2>
+          <h2 className="text-lg font-black text-white uppercase tracking-widest">{copy.labels.repositoryArchive}</h2>
         </div>
         <div className="space-y-6">
           {projects.map((project: any) => (
@@ -796,7 +798,7 @@ const DarkTechnicalLayout = ({ user, projects, currentYear }: any) => (
   </div>
 );
 
-const ModernBentoLayout = ({ user, projects, currentYear }: any) => (
+const ModernBentoLayout = ({ user, projects, currentYear, copy }: any) => (
   <div className="bg-[#f2f4f7] min-h-screen text-slate-900 font-sans p-4 md:p-8">
     <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-4">
       {/* Bio Card */}
@@ -804,7 +806,7 @@ const ModernBentoLayout = ({ user, projects, currentYear }: any) => (
         <div className="absolute top-8 right-8 w-20 h-20 bg-purple-100 text-purple-600 rounded-3xl flex items-center justify-center rotate-12">
           <Zap size={32} />
         </div>
-        <h1 className="text-4xl md:text-6xl font-black tracking-normal mb-4">{user.fullName || "Tanishamiz"}</h1>
+        <h1 className="text-4xl md:text-6xl font-black tracking-normal mb-4">{user.fullName || copy.emptyName}</h1>
         <p className="text-lg text-slate-500 max-w-xl leading-relaxed">{user.bio}</p>
       </div>
 
@@ -812,7 +814,7 @@ const ModernBentoLayout = ({ user, projects, currentYear }: any) => (
       <div className="md:col-span-4 bg-indigo-600 rounded-[2rem] p-8 text-white shadow-lg shadow-indigo-100 flex flex-col justify-between overflow-hidden relative group">
         <div className="absolute -right-4 -top-4 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
         <div className="flex items-center gap-2 font-black uppercase tracking-widest text-xs opacity-70">
-          <Globe size={14} /> Connect
+          <Globe size={14} /> {copy.labels.connect}
         </div>
         <div className="space-y-4 relative z-10">
           <a href="#" className="flex items-center justify-between group/link">
@@ -829,7 +831,7 @@ const ModernBentoLayout = ({ user, projects, currentYear }: any) => (
       {/* Projects Grid */}
       <div className="md:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="md:col-span-3 flex items-center gap-4 py-8">
-          <h2 className="text-2xl font-black tracking-normal">Tanlangan Ishlar</h2>
+          <h2 className="text-2xl font-black tracking-normal">{copy.labels.selectedWorks}</h2>
           <div className="h-px flex-1 bg-slate-200" />
           <LayoutGrid size={24} className="text-slate-400" />
         </div>
@@ -877,13 +879,13 @@ const ModernBentoLayout = ({ user, projects, currentYear }: any) => (
   </div>
 );
 
-const NeoBrutalistLayout = ({ user, projects, currentYear }: any) => (
+const NeoBrutalistLayout = ({ user, projects, currentYear, copy }: any) => (
   <div className="bg-[#FFDE03] min-h-screen text-black font-black p-4 md:p-12 selection:bg-black selection:text-white">
     <div className="max-w-4xl mx-auto space-y-12">
       <header className="border-[4px] border-black bg-white p-8 md:p-12 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
-        <h1 className="text-5xl md:text-8xl mb-6 tracking-normal uppercase leading-none">{user.fullName || "SUNNATULLA"}</h1>
+        <h1 className="text-5xl md:text-8xl mb-6 tracking-normal uppercase leading-none">{user.fullName || copy.generic.professionalDeveloper}</h1>
         <div className="bg-black text-[#FFDE03] inline-block px-4 py-2 mb-8 text-xl">
-          FULL-STACK DEVELOPER
+          {copy.generic.fullStackDeveloper}
         </div>
         <p className="text-2xl leading-tight border-t-[4px] border-black pt-8">
           {user.bio}
@@ -892,21 +894,21 @@ const NeoBrutalistLayout = ({ user, projects, currentYear }: any) => (
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="border-[4px] border-black bg-[#FF5252] p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] text-white">
-          <h2 className="text-3xl mb-4 italic uppercase">Connect</h2>
+          <h2 className="text-3xl mb-4 italic uppercase">{copy.labels.connect}</h2>
           <div className="space-y-4">
             <a href="#" className="block text-2xl hover:underline underline-offset-8 decoration-[4px]">GITHUB ↗</a>
             <a href="#" className="block text-2xl hover:underline underline-offset-8 decoration-[4px]">LINKEDIN ↗</a>
           </div>
         </div>
         <div className="border-[4px] border-black bg-[#448AFF] p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] text-white">
-          <h2 className="text-3xl mb-4 italic uppercase">Contact</h2>
+          <h2 className="text-3xl mb-4 italic uppercase">{copy.labels.contact}</h2>
           <p className="text-2xl break-all">HELLO@DEVPORT.UZ</p>
         </div>
       </div>
 
       <section className="space-y-8">
         <div className="bg-white border-[4px] border-black p-4 inline-block text-3xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-          PROJECTS_ARCHIVE
+          {copy.labels.repositoryArchive}
         </div>
         <div className="grid grid-cols-1 gap-12">
           {projects.map((project: any) => (
@@ -925,7 +927,7 @@ const NeoBrutalistLayout = ({ user, projects, currentYear }: any) => (
                   ))}
                 </div>
                 <a href={project.url || project.repoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-black text-white px-8 py-4 text-xl hover:bg-white hover:text-black transition-colors border-[4px] border-black">
-                  VIEW_LIVE <ExternalLink size={24} strokeWidth={3} />
+                  {copy.viewProject} <ExternalLink size={24} strokeWidth={3} />
                 </a>
               </div>
             </div>
@@ -934,13 +936,13 @@ const NeoBrutalistLayout = ({ user, projects, currentYear }: any) => (
       </section>
 
       <footer className="py-20 text-center text-4xl border-t-[8px] border-black uppercase italic">
-        Peace Out {currentYear}
+        {copy.generic.endTransmission} {currentYear}
       </footer>
     </div>
   </div>
 );
 
-const RetroTerminalLayout = ({ user, projects, currentYear }: any) => (
+const RetroTerminalLayout = ({ user, projects, currentYear, copy }: any) => (
   <div className="bg-[#0c0c0c] min-h-screen text-[#32CD32] font-mono p-4 md:p-12 selection:bg-[#32CD32] selection:text-black">
     <div className="max-w-4xl mx-auto border-[1px] border-[#32CD32] p-4 md:p-10 shadow-[0_0_50px_rgba(50,205,50,0.1)] relative">
       <div className="absolute top-0 right-0 p-4 animate-pulse">
@@ -952,11 +954,11 @@ const RetroTerminalLayout = ({ user, projects, currentYear }: any) => (
           <Command size={14} /> <span>LAST_LOGIN: {new Date().toLocaleDateString()}</span>
         </div>
         <h1 className="text-5xl md:text-7xl font-bold mb-4 flex items-center gap-4">
-          <span className="opacity-50">#</span> {user.fullName || "ROOT"}
+          <span className="opacity-50">#</span> {user.fullName || copy.generic.professionalDeveloper}
         </h1>
         <div className="flex items-center gap-2 mb-8 bg-[#32CD32]/10 p-2 inline-flex">
           <span className="animate-bounce">_</span>
-          <span className="text-sm">STATUS: OPERATIONAL</span>
+          <span className="text-sm">STATUS: {copy.available}</span>
         </div>
         <p className="max-w-2xl text-lg leading-relaxed opacity-80">
           {user.bio}
@@ -966,7 +968,7 @@ const RetroTerminalLayout = ({ user, projects, currentYear }: any) => (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-20">
         <section className="space-y-4">
           <h2 className="text-xl font-bold flex items-center gap-2 bg-[#32CD32] text-black px-2 py-1 inline-block">
-            <Hash size={18} /> SOCIAL_LINKS
+            <Hash size={18} /> {copy.labels.connect}
           </h2>
           <div className="space-y-2 text-sm">
             <a href="#" className="block hover:translate-x-2 transition-transform">&gt; GITHUB_REPOS</a>
@@ -989,7 +991,7 @@ const RetroTerminalLayout = ({ user, projects, currentYear }: any) => (
       <section className="space-y-12">
         <div className="text-2xl font-bold flex items-center gap-2">
           <ChevronRight size={24} className="text-[#32CD32] animate-pulse" />
-          <span>LS ./PROJECTS</span>
+          <span>{copy.selectedWork}</span>
         </div>
         <div className="grid grid-cols-1 gap-8">
           {projects.map((project: any) => (
@@ -1012,7 +1014,7 @@ const RetroTerminalLayout = ({ user, projects, currentYear }: any) => (
                       ))}
                     </div>
                     <a href={project.url || project.repoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs border border-[#32CD32] px-4 py-2 hover:bg-[#32CD32] hover:text-black transition-all">
-                      EXECUTE_LIVE <ExternalLink size={14} />
+                      {copy.viewProject} <ExternalLink size={14} />
                     </a>
                   </div>
                 </div>
@@ -1029,13 +1031,13 @@ const RetroTerminalLayout = ({ user, projects, currentYear }: any) => (
   </div>
 );
 
-const ProfessionalSerifLayout = ({ user, projects, currentYear }: any) => (
+const ProfessionalSerifLayout = ({ user, projects, currentYear, copy }: any) => (
   <div className="bg-[#fcfbf7] min-h-screen text-[#1a1a1a] font-serif selection:bg-amber-100 selection:text-amber-900">
     <div className="max-w-4xl mx-auto px-6 py-24">
       <header className="mb-24 text-center border-b-[0.5px] border-amber-900/10 pb-20">
         <div className="text-xs font-bold uppercase tracking-[0.4em] text-amber-800/60 mb-8 italic">Curriculum Vitae / Portfolio</div>
         <h1 className="text-6xl md:text-8xl font-normal mb-8 leading-none italic">
-          {user.fullName || "Your Name"}
+          {user.fullName || copy.emptyName}
         </h1>
         <p className="text-xl md:text-2xl text-slate-600 max-w-2xl mx-auto leading-relaxed border-t border-amber-900/5 pt-12">
           {user.bio}
@@ -1047,14 +1049,14 @@ const ProfessionalSerifLayout = ({ user, projects, currentYear }: any) => (
           {user.socialLinks?.linkedin && (
             <a href={user.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="hover:text-amber-900 transition-colors">LinkedIn</a>
           )}
-          <a href="mailto:hello@devport.uz" className="hover:text-amber-900 transition-colors">Contact</a>
+          <a href="mailto:hello@devport.uz" className="hover:text-amber-900 transition-colors">{copy.labels.contact}</a>
         </div>
       </header>
 
       <section>
         <div className="flex items-center gap-6 mb-20">
           <div className="h-[0.5px] flex-1 bg-amber-900/20" />
-          <h2 className="text-xs font-bold uppercase tracking-[0.5em] text-amber-800/40 font-sans">Selected Works</h2>
+          <h2 className="text-xs font-bold uppercase tracking-[0.5em] text-amber-800/40 font-sans">{copy.labels.selectedWorks}</h2>
           <div className="h-[0.5px] flex-1 bg-amber-900/20" />
         </div>
 
@@ -1093,7 +1095,7 @@ const ProfessionalSerifLayout = ({ user, projects, currentYear }: any) => (
                     ))}
                   </div>
                   <a href={project.url || project.repoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-4 text-xs font-bold uppercase tracking-[0.2em] border border-amber-900/20 px-8 py-4 hover:bg-amber-900 hover:text-white transition-all font-sans">
-                    View Project <ChevronRight size={14} />
+                    {copy.viewProject} <ChevronRight size={14} />
                   </a>
                 </div>
               </div>
@@ -1104,7 +1106,7 @@ const ProfessionalSerifLayout = ({ user, projects, currentYear }: any) => (
 
       <footer className="mt-60 pt-20 border-t border-amber-900/10 flex flex-col md:flex-row justify-between items-center gap-8 text-[10px] font-bold uppercase tracking-[0.4em] text-amber-800/40 font-sans">
         <div>Portfolio / {user.fullName} / Uzbekistan</div>
-        <div>All rights reserved &copy; {currentYear}</div>
+        <div>{copy.generic.allRightsReserved} &copy; {currentYear}</div>
       </footer>
     </div>
   </div>

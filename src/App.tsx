@@ -10,6 +10,7 @@ import { ResumePreview } from './components/preview/ResumePreview';
 import { AppLanguage, Project, PublishedPortfolio, User } from './types';
 import { cn } from './lib/utils';
 import { LANGUAGE_LABELS } from './lib/resume';
+import { getAppCopy } from './lib/i18n';
 import { Download, Eye, FileText, Home } from 'lucide-react';
 import { useTelegram } from './hooks/useTelegram';
 
@@ -30,10 +31,10 @@ type BeforeInstallPromptEvent = Event & {
 
 const STORAGE_KEY = 'devport.workspace.v1';
 
-const NAV_ITEMS: Array<{ id: AppView; label: string; icon: React.ElementType }> = [
-  { id: 'studio', label: 'Studio', icon: Home },
-  { id: 'portfolio', label: 'Portfolio', icon: Eye },
-  { id: 'resume', label: 'CV', icon: FileText },
+const NAV_ITEMS: Array<{ id: AppView; icon: React.ElementType }> = [
+  { id: 'studio', icon: Home },
+  { id: 'portfolio', icon: Eye },
+  { id: 'resume', icon: FileText },
 ];
 
 const DEFAULT_USER: User = {
@@ -83,6 +84,7 @@ export default function App() {
     publishedSlug ? 'loading' : 'ready',
   );
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const copy = getAppCopy(language);
 
   const [user, setUser] = useState<User>(() => ({
     ...DEFAULT_USER,
@@ -177,10 +179,10 @@ export default function App() {
   }, [view, tg]);
 
   const activeTitle = useMemo(() => {
-    if (view === 'portfolio') return 'Portfolio preview';
-    if (view === 'resume') return 'CV preview';
-    return 'Simple CV studio';
-  }, [view]);
+    if (view === 'portfolio') return copy.app.portfolioTitle;
+    if (view === 'resume') return copy.app.resumeTitle;
+    return copy.app.studioTitle;
+  }, [copy, view]);
 
   const handleNavigate = (target: AppView) => {
     setView(target);
@@ -190,7 +192,6 @@ export default function App() {
     setUser(DEFAULT_USER);
     setProjects([]);
     setSelectedTemplate('premium-developer');
-    setLanguage('uz');
     try {
       window.localStorage.removeItem(STORAGE_KEY);
     } catch {
@@ -210,7 +211,7 @@ export default function App() {
       return (
         <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 text-slate-950">
           <div className="rounded-lg border border-slate-200 bg-white p-6 text-center shadow-sm">
-            <p className="text-sm font-semibold text-slate-600">Portfolio yuklanmoqda...</p>
+            <p className="text-sm font-semibold text-slate-600">{copy.app.publicLoading}</p>
           </div>
         </div>
       );
@@ -220,8 +221,8 @@ export default function App() {
       return (
         <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 text-slate-950">
           <div className="max-w-sm rounded-lg border border-slate-200 bg-white p-6 text-center shadow-sm">
-            <p className="text-lg font-semibold text-slate-950">Portfolio topilmadi</p>
-            <p className="mt-2 text-sm leading-6 text-slate-500">Link eskirgan yoki hali publish qilinmagan bo'lishi mumkin.</p>
+            <p className="text-lg font-semibold text-slate-950">{copy.app.publicMissingTitle}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-500">{copy.app.publicMissingText}</p>
           </div>
         </div>
       );
@@ -258,6 +259,7 @@ export default function App() {
               <NavButton
                 key={item.id}
                 item={item}
+                label={copy.nav[item.id]}
                 isActive={view === item.id}
                 onClick={() => handleNavigate(item.id)}
               />
@@ -301,7 +303,7 @@ export default function App() {
           className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-3 z-50 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-950 px-3 py-2 text-xs font-bold text-white shadow-xl shadow-slate-900/15 md:bottom-8 md:right-8"
         >
           <Download size={15} />
-          Install
+          {copy.app.install}
         </button>
       )}
 
@@ -310,6 +312,7 @@ export default function App() {
           <NavButton
             key={item.id}
             item={item}
+            label={copy.nav[item.id]}
             isActive={view === item.id}
             onClick={() => handleNavigate(item.id)}
             compact
@@ -322,11 +325,13 @@ export default function App() {
 
 const NavButton = ({
   item,
+  label,
   isActive,
   onClick,
   compact = false,
 }: {
-  item: { id: AppView; label: string; icon: React.ElementType };
+  item: { id: AppView; icon: React.ElementType };
+  label: string;
   isActive: boolean;
   onClick: () => void;
   compact?: boolean;
@@ -343,7 +348,7 @@ const NavButton = ({
       )}
     >
       <Icon size={compact ? 18 : 16} />
-      <span className="truncate">{item.label}</span>
+      <span className="truncate">{label}</span>
     </button>
   );
 };

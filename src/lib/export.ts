@@ -1,4 +1,66 @@
-import { ResumeData, User } from '../types';
+import { AppLanguage, ResumeData, User } from '../types';
+
+const EXPORT_COPY: Record<AppLanguage, {
+  fallbackName: string;
+  links: string;
+  summary: string;
+  skills: string;
+  experience: string;
+  projects: string;
+  education: string;
+  languages: string;
+  emptyExperience: string;
+  emptyProjects: string;
+  impact: string;
+  stack: string;
+  link: string;
+}> = {
+  uz: {
+    fallbackName: 'Professional Developer',
+    links: 'GitHub / LinkedIn / Website',
+    summary: 'Professional xulosa',
+    skills: "Ko'nikmalar",
+    experience: 'Professional tajriba',
+    projects: 'Tanlangan loyihalar',
+    education: "Ta'lim",
+    languages: 'Tillar',
+    emptyExperience: "Tajriba loyihalar import qilingandan keyin to'ldiriladi.",
+    emptyProjects: "Project case studylar GitHub repo import qilingandan keyin qo'shiladi.",
+    impact: 'Natija',
+    stack: 'Stack',
+    link: 'Link',
+  },
+  en: {
+    fallbackName: 'Professional Developer',
+    links: 'GitHub / LinkedIn / Website',
+    summary: 'Professional Summary',
+    skills: 'Core Skills',
+    experience: 'Professional Experience',
+    projects: 'Selected Projects',
+    education: 'Education',
+    languages: 'Languages',
+    emptyExperience: 'Experience details will be added after importing projects.',
+    emptyProjects: 'Project case studies will be added after importing GitHub repos.',
+    impact: 'Impact',
+    stack: 'Stack',
+    link: 'Link',
+  },
+  ru: {
+    fallbackName: 'Профессиональный разработчик',
+    links: 'GitHub / LinkedIn / Website',
+    summary: 'Профессиональное summary',
+    skills: 'Ключевые навыки',
+    experience: 'Профессиональный опыт',
+    projects: 'Избранные проекты',
+    education: 'Образование',
+    languages: 'Языки',
+    emptyExperience: 'Опыт будет заполнен после импорта проектов.',
+    emptyProjects: 'Project case studies будут добавлены после импорта GitHub repos.',
+    impact: 'Результат',
+    stack: 'Stack',
+    link: 'Ссылка',
+  },
+};
 
 const cleanFilePart = (value: string) => (
   value
@@ -23,20 +85,21 @@ export const downloadBlob = (content: BlobPart, fileName: string, type: string) 
   URL.revokeObjectURL(url);
 };
 
-export const buildResumeMarkdown = (user: User, resume: ResumeData) => {
+export const buildResumeMarkdown = (user: User, resume: ResumeData, language: AppLanguage = 'uz') => {
+  const copy = EXPORT_COPY[language] || EXPORT_COPY.uz;
   const lines = [
-    `# ${user.fullName || 'Professional Developer'}`,
+    `# ${user.fullName || copy.fallbackName}`,
     resume.headline,
     '',
     resume.contactLinks.join(' | '),
     '',
-    '## Professional Summary',
+    `## ${copy.summary}`,
     resume.summary,
     '',
-    '## Core Skills',
+    `## ${copy.skills}`,
     ...resume.skills.map((skill) => `- ${skill}`),
     '',
-    '## Professional Experience',
+    `## ${copy.experience}`,
     ...(resume.experience.length
       ? resume.experience.flatMap((item) => [
         `### ${item.role} - ${item.company}`,
@@ -44,30 +107,31 @@ export const buildResumeMarkdown = (user: User, resume: ResumeData) => {
         `- ${item.description}`,
         '',
       ])
-      : ['- Experience details will be added after importing projects.', '']),
-    '## Selected Projects',
+      : [`- ${copy.emptyExperience}`, '']),
+    `## ${copy.projects}`,
     ...(resume.projects.length
       ? resume.projects.flatMap((project) => [
         `### ${project.title}`,
         project.role ? `_${project.role}_` : '',
         `- ${project.description}`,
-        project.impact ? `- Impact: ${project.impact}` : '',
-        project.tags.length ? `- Stack: ${project.tags.join(', ')}` : '',
-        project.url || project.repoUrl ? `- Link: ${project.url || project.repoUrl}` : '',
+        project.impact ? `- ${copy.impact}: ${project.impact}` : '',
+        project.tags.length ? `- ${copy.stack}: ${project.tags.join(', ')}` : '',
+        project.url || project.repoUrl ? `- ${copy.link}: ${project.url || project.repoUrl}` : '',
         '',
       ].filter(Boolean))
-      : ['- Project case studies will be added after importing GitHub repos.', '']),
-    '## Education',
+      : [`- ${copy.emptyProjects}`, '']),
+    `## ${copy.education}`,
     ...resume.education.map((item) => `- ${item.degree}, ${item.institution} (${item.gradYear})`),
     '',
-    '## Languages',
+    `## ${copy.languages}`,
     ...resume.languages.map((item) => `- ${item}`),
   ];
 
   return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 };
 
-export const downloadResumePdf = async (user: User, resume: ResumeData) => {
+export const downloadResumePdf = async (user: User, resume: ResumeData, language: AppLanguage = 'uz') => {
+  const copy = EXPORT_COPY[language] || EXPORT_COPY.uz;
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const margin = 48;
@@ -101,17 +165,17 @@ export const downloadResumePdf = async (user: User, resume: ResumeData) => {
     addText(title.toUpperCase(), 9, 'bold', 10);
   };
 
-  addText(user.fullName || 'Professional Developer', 24, 'bold', 8);
+  addText(user.fullName || copy.fallbackName, 24, 'bold', 8);
   addText(resume.headline, 12, 'bold', 8);
-  addText(resume.contactLinks.join('  |  ') || 'GitHub / LinkedIn / Website', 9, 'normal', 12);
+  addText(resume.contactLinks.join('  |  ') || copy.links, 9, 'normal', 12);
 
-  addSection('Professional Summary');
+  addSection(copy.summary);
   addText(resume.summary, 10, 'normal', 10);
 
-  addSection('Core Skills');
+  addSection(copy.skills);
   addText(resume.skills.join(' / '), 10, 'normal', 10);
 
-  addSection('Professional Experience');
+  addSection(copy.experience);
   if (resume.experience.length) {
     resume.experience.forEach((item) => {
       addText(`${item.role} - ${item.company}`, 11, 'bold', 4);
@@ -119,10 +183,10 @@ export const downloadResumePdf = async (user: User, resume: ResumeData) => {
       addText(item.description, 9, 'normal', 10);
     });
   } else {
-    addText('Experience details will be added after importing projects.', 9, 'normal', 10);
+    addText(copy.emptyExperience, 9, 'normal', 10);
   }
 
-  addSection('Selected Projects');
+  addSection(copy.projects);
   if (resume.projects.length) {
     resume.projects.slice(0, 8).forEach((project) => {
       addText(project.title, 11, 'bold', 4);
@@ -130,13 +194,13 @@ export const downloadResumePdf = async (user: User, resume: ResumeData) => {
       addText(project.tags.join(' / '), 8, 'normal', 10);
     });
   } else {
-    addText('Project case studies will be added after importing GitHub repos.', 9, 'normal', 10);
+    addText(copy.emptyProjects, 9, 'normal', 10);
   }
 
-  addSection('Education');
+  addSection(copy.education);
   resume.education.forEach((item) => addText(`${item.degree}, ${item.institution} (${item.gradYear})`, 9, 'normal', 6));
 
-  addSection('Languages');
+  addSection(copy.languages);
   addText(resume.languages.join(', '), 9, 'normal', 6);
 
   doc.save(`${getResumeFileBaseName(user)}.pdf`);
