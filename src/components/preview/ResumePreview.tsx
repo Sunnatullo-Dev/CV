@@ -22,7 +22,7 @@ import { Button } from '../shared/Button';
 import { analyzeResume } from '../../lib/ats';
 import { buildResumeMarkdown, downloadBlob, downloadResumeDocx, downloadResumePdf, getResumeFileBaseName } from '../../lib/export';
 
-type CvTemplateId = 'ats-classic' | 'modern-sidebar' | 'timeline-pro' | 'executive-compact' | 'ats-clean' | 'one-page-premium' | 'software-engineer';
+type CvTemplateId = 'ats-classic' | 'modern-sidebar' | 'classic-sidebar' | 'timeline-pro' | 'executive-compact' | 'ats-clean' | 'one-page-premium' | 'software-engineer';
 
 interface ResumePreviewProps {
   user: User;
@@ -56,6 +56,7 @@ const COPY = {
     linksFallback: 'GitHub / LinkedIn / Website',
     timelineCv: 'Timeline CV',
     executiveCv: 'Executive CV',
+    classicSidebarCv: 'Classic Sidebar Resume',
     atsCleanCv: 'ATS Clean CV',
     onePageCv: 'One Page Premium',
     softwareEngineerCv: 'Software Engineer Resume',
@@ -87,6 +88,7 @@ const COPY = {
     linksFallback: 'GitHub / LinkedIn / Website',
     timelineCv: 'Timeline CV',
     executiveCv: 'Executive CV',
+    classicSidebarCv: 'Classic Sidebar Resume',
     atsCleanCv: 'ATS Clean CV',
     onePageCv: 'One Page Premium',
     softwareEngineerCv: 'Software Engineer Resume',
@@ -118,6 +120,7 @@ const COPY = {
     linksFallback: 'GitHub / LinkedIn / Website',
     timelineCv: 'Timeline CV',
     executiveCv: 'Executive CV',
+    classicSidebarCv: 'Classic Sidebar Resume',
     atsCleanCv: 'ATS Clean CV',
     onePageCv: 'One Page Premium',
     softwareEngineerCv: 'Software Engineer Resume',
@@ -132,6 +135,10 @@ const CV_TEMPLATES: Array<{
 }> = [
   {
     id: 'modern-sidebar',
+    icon: Layers3,
+  },
+  {
+    id: 'classic-sidebar',
     icon: Layers3,
   },
   {
@@ -163,6 +170,7 @@ const CV_TEMPLATES: Array<{
 const TEMPLATE_COPY: Record<AppLanguage, Record<CvTemplateId, { name: string; audience: string }>> = {
   uz: {
     'modern-sidebar': { name: 'Modern Sidebar', audience: 'Tech CV / portfolio PDF' },
+    'classic-sidebar': { name: 'Classic Sidebar', audience: 'Rasmli chap panel va timeline' },
     'timeline-pro': { name: 'Timeline Pro', audience: "Tajribaga yo'naltirilgan resume" },
     'ats-clean': { name: 'ATS Clean CV', audience: "Ishga topshirish uchun toza format" },
     'one-page-premium': { name: 'One Page Premium', audience: '1 sahifalik premium CV' },
@@ -172,6 +180,7 @@ const TEMPLATE_COPY: Record<AppLanguage, Record<CvTemplateId, { name: string; au
   },
   en: {
     'modern-sidebar': { name: 'Modern Sidebar', audience: 'Tech CV / portfolio PDF' },
+    'classic-sidebar': { name: 'Classic Sidebar', audience: 'Photo sidebar and timeline resume' },
     'timeline-pro': { name: 'Timeline Pro', audience: 'Experience-focused resume' },
     'ats-clean': { name: 'ATS Clean CV', audience: 'Clean job application format' },
     'one-page-premium': { name: 'One Page Premium', audience: 'Premium one-page CV' },
@@ -181,6 +190,7 @@ const TEMPLATE_COPY: Record<AppLanguage, Record<CvTemplateId, { name: string; au
   },
   ru: {
     'modern-sidebar': { name: 'Modern Sidebar', audience: 'Tech CV / portfolio PDF' },
+    'classic-sidebar': { name: 'Classic Sidebar', audience: 'Фото в боковой панели и timeline' },
     'timeline-pro': { name: 'Timeline Pro', audience: 'CV с акцентом на опыт' },
     'ats-clean': { name: 'ATS Clean CV', audience: 'Чистый формат для отклика' },
     'one-page-premium': { name: 'One Page Premium', audience: 'Премиум CV на одну страницу' },
@@ -340,6 +350,7 @@ export const ResumePreview = ({ user, projects, language }: ResumePreviewProps) 
 
       {templateId === 'ats-classic' && <AtsClassicTemplate user={user} resume={resume} copy={copy} language={language} />}
       {templateId === 'modern-sidebar' && <ModernSidebarTemplate user={user} resume={resume} copy={copy} language={language} />}
+      {templateId === 'classic-sidebar' && <ClassicSidebarTemplate user={user} resume={resume} copy={copy} language={language} />}
       {templateId === 'timeline-pro' && <TimelineProTemplate user={user} resume={resume} copy={copy} language={language} />}
       {templateId === 'ats-clean' && <AtsCleanTemplate user={user} resume={resume} copy={copy} language={language} />}
       {templateId === 'one-page-premium' && <OnePagePremiumTemplate user={user} resume={resume} copy={copy} language={language} />}
@@ -420,6 +431,115 @@ const ModernSidebarTemplate = ({ user, resume, copy, language }: TemplateProps) 
     </main>
   </article>
 );
+
+const ClassicSidebarTemplate = ({ user, resume, copy, language }: TemplateProps) => {
+  const displayName = user.fullName || copy.fallbackName;
+  const [firstName, ...restNameParts] = displayName.split(' ');
+  const lastName = restNameParts.join(' ');
+
+  return (
+    <article className="resume-page mx-auto max-w-5xl overflow-hidden bg-white shadow-sm md:grid md:grid-cols-[0.34fr_0.66fr]">
+      <aside className="bg-[#333b4c] px-6 py-8 text-white md:min-h-[1120px] md:px-8">
+        <div className="mx-auto mb-10 flex h-40 w-40 items-center justify-center overflow-hidden rounded-full border-4 border-white/15 bg-white/10 text-5xl font-semibold text-white">
+          {user.avatarUrl ? (
+            <img src={user.avatarUrl} alt={displayName} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+          ) : (
+            displayName.charAt(0)
+          )}
+        </div>
+
+        <ClassicSidebarSection title={copy.contact}>
+          {resume.contactLinks.length ? (
+            <div className="space-y-3">
+              {resume.contactLinks.map((link) => (
+                <a key={link} href={link} target="_blank" rel="noopener noreferrer" className="block break-all text-sm font-medium leading-6 text-slate-100 hover:text-white hover:underline">
+                  {link.replace(/^https?:\/\//, '')}
+                </a>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm leading-6 text-slate-200">{copy.linksFallback}</p>
+          )}
+        </ClassicSidebarSection>
+
+        <ClassicSidebarSection title={copy.skills}>
+          <ul className="space-y-3">
+            {resume.skills.slice(0, 10).map((skill) => (
+              <li key={skill} className="flex gap-3 text-sm leading-6 text-slate-100">
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-white" />
+                <span>{skill}</span>
+              </li>
+            ))}
+          </ul>
+        </ClassicSidebarSection>
+
+        <ClassicSidebarSection title={copy.languages}>
+          <ul className="space-y-3">
+            {resume.languages.map((item) => (
+              <li key={item} className="flex gap-3 text-sm leading-6 text-slate-100">
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-white" />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </ClassicSidebarSection>
+      </aside>
+
+      <main className="p-6 text-slate-900 md:p-10">
+        <header className="pb-7">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.28em] text-slate-500">{copy.classicSidebarCv}</p>
+          <h2 className="text-5xl font-light leading-tight tracking-normal text-slate-900 md:text-6xl">
+            <span className="font-semibold">{firstName}</span>{lastName ? ` ${lastName}` : ''}
+          </h2>
+          <p className="mt-2 text-2xl font-light tracking-[0.18em] text-slate-700">{resume.headline}</p>
+          <p className="mt-1 text-base font-semibold text-slate-800">{LANGUAGE_NAMES[language]} CV</p>
+          <p className="mt-5 text-sm leading-7 text-slate-700">{resume.summary}</p>
+        </header>
+
+        <ClassicTimelineSection title={copy.experience}>
+          {resume.experience.length ? resume.experience.slice(0, 5).map((item) => (
+            <ClassicTimelineItem
+              key={`${item.company}-${item.role}`}
+              date={`${item.startDate} - ${item.endDate || 'Present'}`}
+              subtitle={item.company}
+              title={item.role}
+            >
+              {item.description}
+            </ClassicTimelineItem>
+          )) : <p className="text-sm text-slate-500">{copy.empty}</p>}
+        </ClassicTimelineSection>
+
+        {resume.projects.length > 0 && (
+          <ClassicTimelineSection title={copy.projects}>
+            {resume.projects.slice(0, 3).map((project) => (
+              <ClassicTimelineItem
+                key={project.title}
+                date={project.tags.slice(0, 3).join(' / ') || copy.projects}
+                subtitle={project.role || copy.projects}
+                title={project.title}
+              >
+                {[project.description, project.impact].filter(Boolean).join(' ')}
+              </ClassicTimelineItem>
+            ))}
+          </ClassicTimelineSection>
+        )}
+
+        <ClassicTimelineSection title={copy.education}>
+          {resume.education.map((item) => (
+            <ClassicTimelineItem
+              key={`${item.institution}-${item.gradYear}`}
+              date={item.gradYear}
+              subtitle={item.institution}
+              title={item.degree}
+            >
+              {item.institution}
+            </ClassicTimelineItem>
+          ))}
+        </ClassicTimelineSection>
+      </main>
+    </article>
+  );
+};
 
 const TimelineProTemplate = ({ user, resume, copy, language }: TemplateProps) => (
   <article className="resume-page mx-auto max-w-6xl bg-white p-8 shadow-sm md:p-12">
@@ -603,6 +723,40 @@ const SoftwareEngineerTemplate = ({ user, resume, copy, language }: TemplateProp
       </main>
     </div>
   </article>
+);
+
+const ClassicSidebarSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <section className="mb-8 break-inside-avoid">
+    <h3 className="mb-5 border-b border-white/70 pb-2 text-2xl font-semibold tracking-normal text-white">{title}</h3>
+    {children}
+  </section>
+);
+
+const ClassicTimelineSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <section className="break-inside-avoid py-5">
+    <h3 className="border-b-2 border-slate-900 pb-2 text-3xl font-semibold tracking-normal text-slate-900">{title}</h3>
+    <div className="mt-5 space-y-6">{children}</div>
+  </section>
+);
+
+const ClassicTimelineItem = ({
+  date,
+  subtitle,
+  title,
+  children,
+}: {
+  date: string;
+  subtitle: string;
+  title: string;
+  children: React.ReactNode;
+}) => (
+  <div className="relative border-l-2 border-slate-300 pl-5">
+    <span className="absolute -left-[7px] top-1 h-3 w-3 rounded-full border-2 border-slate-700 bg-white" />
+    <p className="text-base font-bold tracking-normal text-slate-800">{date}</p>
+    <p className="mt-1 text-base text-slate-700">{subtitle}</p>
+    <h4 className="mt-1 text-xl font-semibold tracking-normal text-slate-900">{title}</h4>
+    <p className="mt-2 text-sm leading-7 text-slate-700">{children}</p>
+  </div>
 );
 
 interface TemplateProps {
