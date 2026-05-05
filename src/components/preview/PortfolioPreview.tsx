@@ -1,6 +1,6 @@
 import React from "react";
 import { AppLanguage, User, Project } from "../../types";
-import { Github, Globe, Mail, MapPin, ExternalLink, Linkedin, Twitter, MessageCircle, Rocket, ArrowRight, Terminal, Code2, Cpu, Zap, LayoutGrid, Monitor, Command, Hash, ChevronRight, CheckCircle2, FileText } from "lucide-react";
+import { Github, Globe, Mail, MapPin, ExternalLink, Linkedin, Twitter, MessageCircle, Rocket, ArrowRight, Terminal, Code2, Cpu, Zap, LayoutGrid, Monitor, Command, Hash, ChevronRight, CheckCircle2, FileText, Sparkles } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { getAppCopy } from "../../lib/i18n";
 import { motion } from "motion/react";
@@ -26,6 +26,12 @@ export const PortfolioPreview = ({ user, projects, templateId = "minimalist", la
       return <PremiumDeveloperLayout user={user} projects={visibleProjects} currentYear={currentYear} copy={copy} />;
     case "case-study-pro":
       return <CaseStudyProLayout user={user} projects={visibleProjects} currentYear={currentYear} copy={copy} />;
+    case "ats-clean":
+      return <AtsCleanPortfolioLayout user={user} projects={visibleProjects} currentYear={currentYear} copy={copy} />;
+    case "one-page-premium":
+      return <OnePagePremiumPortfolioLayout user={user} projects={visibleProjects} currentYear={currentYear} copy={copy} />;
+    case "software-engineer":
+      return <SoftwareEngineerPortfolioLayout user={user} projects={visibleProjects} currentYear={currentYear} copy={copy} />;
     case "executive-architect":
       return <ExecutiveArchitectLayout user={user} projects={visibleProjects} currentYear={currentYear} copy={copy} />;
     case "modern-minimalist":
@@ -51,6 +57,9 @@ export const PortfolioPreview = ({ user, projects, templateId = "minimalist", la
 const TEMPLATE_LABELS: Record<string, string> = {
   "premium-developer": "Premium Developer",
   "case-study-pro": "Case Study Pro",
+  "ats-clean": "ATS Clean CV",
+  "one-page-premium": "One Page Premium",
+  "software-engineer": "Software Engineer Resume",
   "executive-architect": "Executive Architect",
   "modern-minimalist": "Modern Minimalist",
   "modern-technical": "Modern Technical",
@@ -315,6 +324,205 @@ const CaseStudyProLayout = ({ user, projects, currentYear, copy }: any) => (
       {copy.labels.caseStudyPortfolio} / {currentYear}
     </footer>
   </div>
+);
+
+const AtsCleanPortfolioLayout = ({ user, projects, currentYear, copy }: any) => {
+  const skills = Array.from(new Set(projects.flatMap((project: any) => project.tags))).slice(0, 10);
+
+  return (
+    <div className="min-h-screen bg-slate-100 px-4 py-6 text-slate-950 md:px-6 md:py-10">
+      <article className="mx-auto max-w-5xl bg-white p-6 shadow-sm md:p-12">
+        <header className="border-b-2 border-slate-900 pb-7">
+          <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-start">
+            <div>
+              <p className="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-slate-500">ATS Clean CV</p>
+              <h1 className="text-4xl font-bold leading-tight tracking-normal text-slate-950 md:text-5xl">
+                {user.fullName || copy.generic.professionalDeveloper}
+              </h1>
+              <p className="mt-3 text-base font-semibold text-slate-700">{copy.generic.fullStackDeveloper}</p>
+            </div>
+            <div className="space-y-1 text-sm font-medium text-slate-600 md:text-right">
+              {user.githubUsername && <a className="block hover:underline" href={`https://github.com/${user.githubUsername}`} target="_blank" rel="noopener noreferrer">github.com/{user.githubUsername}</a>}
+              {user.socialLinks?.linkedin && <a className="block hover:underline" href={user.socialLinks.linkedin} target="_blank" rel="noopener noreferrer">{user.socialLinks.linkedin.replace(/^https?:\/\//, "")}</a>}
+              {user.socialLinks?.website && <a className="block hover:underline" href={user.socialLinks.website} target="_blank" rel="noopener noreferrer">{user.socialLinks.website.replace(/^https?:\/\//, "")}</a>}
+            </div>
+          </div>
+        </header>
+
+        <main className="grid gap-8 py-8 md:grid-cols-[0.64fr_0.36fr]">
+          <section className="space-y-7">
+            <CleanResumeSection title={copy.selectedWork}>
+              <p className="text-sm leading-7 text-slate-700">{user.bio || copy.emptyBio}</p>
+              {user.experienceSummary && <p className="mt-3 text-sm leading-7 text-slate-700">{user.experienceSummary}</p>}
+            </CleanResumeSection>
+
+            <CleanResumeSection title={copy.stats.selectedCases}>
+              <div className="space-y-5">
+                {projects.slice(0, 5).map((project: any) => (
+                  <div key={project.id} className="break-inside-avoid">
+                    <div className="flex flex-col gap-1 md:flex-row md:items-baseline md:justify-between">
+                      <h2 className="text-base font-bold text-slate-950">{project.title}</h2>
+                      <p className="text-xs font-bold uppercase tracking-widest text-slate-500">{project.role || copy.caseStudy}</p>
+                    </div>
+                    <p className="mt-2 text-sm leading-7 text-slate-700">{project.description}</p>
+                    {project.impact && <p className="mt-2 text-sm font-semibold leading-7 text-slate-900">{project.impact}</p>}
+                    <p className="mt-2 text-xs font-semibold text-slate-500">{project.tags.join(" / ")}</p>
+                  </div>
+                ))}
+              </div>
+            </CleanResumeSection>
+          </section>
+
+          <aside className="space-y-6">
+            <CleanResumeSection title={copy.stats.stackSignal}>
+              <div className="flex flex-wrap gap-2">
+                {skills.map((skill: any) => (
+                  <span key={skill} className="rounded border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700">{skill}</span>
+                ))}
+              </div>
+            </CleanResumeSection>
+            <CleanResumeSection title={copy.contactSignal}>
+              <p className="text-sm leading-7 text-slate-700">{copy.available}</p>
+            </CleanResumeSection>
+          </aside>
+        </main>
+
+        <footer className="border-t border-slate-200 pt-6 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+          ATS Clean / {currentYear}
+        </footer>
+      </article>
+    </div>
+  );
+};
+
+const OnePagePremiumPortfolioLayout = ({ user, projects, currentYear, copy }: any) => {
+  const featured = projects[0];
+  const skills = Array.from(new Set(projects.flatMap((project: any) => project.tags))).slice(0, 8);
+
+  return (
+    <div className="min-h-screen bg-[#eef3f8] text-slate-950">
+      <main className="mx-auto grid max-w-7xl gap-5 px-4 py-6 md:grid-cols-[0.42fr_0.58fr] md:px-6 md:py-10">
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+          <p className="inline-flex items-center gap-2 rounded-md bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-widest text-blue-700">
+            <Sparkles size={14} />
+            One Page Premium
+          </p>
+          <h1 className="mt-8 text-4xl font-semibold leading-tight tracking-normal md:text-6xl">
+            {user.fullName || copy.generic.professionalDeveloper}
+          </h1>
+          <p className="mt-5 text-base leading-8 text-slate-600">{user.bio || copy.emptyBio}</p>
+
+          <div className="mt-8 grid gap-3 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
+            <Stat label={copy.stats.portfolioProjects} value={projects.length} copy={copy} />
+            <Stat label={copy.stats.primaryFocus} value={copy.stats.productDelivery} copy={copy} />
+            <Stat label={copy.stats.availability} value={copy.available} copy={copy} />
+          </div>
+
+          <div className="mt-8 flex flex-wrap gap-2">
+            {skills.map((skill: any) => (
+              <span key={skill} className="rounded-md bg-slate-950 px-3 py-1.5 text-xs font-bold text-white">{skill}</span>
+            ))}
+          </div>
+        </section>
+
+        <section className="grid gap-5">
+          {featured && (
+            <article className="rounded-2xl border border-slate-200 bg-slate-950 p-6 text-white shadow-sm md:p-8">
+              <p className="text-xs font-bold uppercase tracking-[0.24em] text-blue-300">{copy.caseStudy} 01</p>
+              <h2 className="mt-4 text-3xl font-semibold tracking-normal md:text-4xl">{featured.title}</h2>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300">{featured.description}</p>
+              {featured.impact && <p className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 text-sm font-semibold leading-7 text-white">{featured.impact}</p>}
+            </article>
+          )}
+
+          <div className="grid gap-5 md:grid-cols-2">
+            {projects.slice(featured ? 1 : 0, 5).map((project: any, index: number) => (
+              <a key={project.id} href={project.url || project.repoUrl || "#"} target="_blank" rel="noopener noreferrer" className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-blue-200">
+                <div className="mb-5 flex items-start justify-between gap-4">
+                  <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-bold uppercase tracking-widest text-slate-500">0{index + 2}</span>
+                  <ExternalLink size={16} className="text-slate-400 group-hover:text-blue-700" />
+                </div>
+                <h3 className="text-xl font-semibold tracking-normal text-slate-950">{project.title}</h3>
+                <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">{project.description}</p>
+                <p className="mt-4 text-xs font-bold uppercase tracking-widest text-blue-700">{project.tags.slice(0, 3).join(" / ")}</p>
+              </a>
+            ))}
+          </div>
+        </section>
+      </main>
+
+      <footer className="px-6 pb-8 text-center text-xs font-bold uppercase tracking-widest text-slate-400">
+        {user.fullName || "DevPort"} / {currentYear}
+      </footer>
+    </div>
+  );
+};
+
+const SoftwareEngineerPortfolioLayout = ({ user, projects, currentYear, copy }: any) => {
+  const skills = Array.from(new Set(projects.flatMap((project: any) => project.tags))).slice(0, 12);
+
+  return (
+    <div className="min-h-screen bg-[#101316] text-slate-300">
+      <div className="mx-auto max-w-6xl px-4 py-10 md:px-6 md:py-16">
+        <header className="grid gap-8 border-b border-white/10 pb-10 md:grid-cols-[1fr_280px] md:items-end">
+          <div>
+            <p className="mb-5 inline-flex items-center gap-2 rounded-md border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-cyan-300">
+              <Code2 size={14} />
+              Software Engineer Resume
+            </p>
+            <h1 className="text-4xl font-black leading-tight tracking-normal text-white md:text-6xl">
+              {user.fullName || copy.generic.fullStackDeveloper}
+            </h1>
+            <p className="mt-5 max-w-3xl text-base leading-8 text-slate-400">{user.bio || copy.emptyBio}</p>
+          </div>
+
+          <aside className="rounded-xl border border-white/10 bg-white/[0.04] p-5">
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-500">{copy.stats.stackSignal}</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {skills.slice(0, 8).map((skill: any) => (
+                <span key={skill} className="rounded-md border border-cyan-400/20 bg-cyan-400/10 px-2.5 py-1 text-xs font-bold text-cyan-200">{skill}</span>
+              ))}
+            </div>
+          </aside>
+        </header>
+
+        <main className="grid gap-6 py-10 md:grid-cols-2">
+          {projects.map((project: any, index: number) => (
+            <article key={project.id} className="break-inside-avoid rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300">case_{String(index + 1).padStart(2, "0")}</p>
+                  <h2 className="mt-2 text-2xl font-black tracking-normal text-white">{project.title}</h2>
+                </div>
+                <Terminal size={22} className="shrink-0 text-cyan-300" />
+              </div>
+              <p className="text-sm leading-7 text-slate-400">{project.description}</p>
+              {project.impact && <p className="mt-4 border-l-2 border-cyan-300 pl-4 text-sm font-semibold leading-7 text-slate-200">{project.impact}</p>}
+              <div className="mt-5 flex flex-wrap gap-2">
+                {project.tags.map((tag: string) => (
+                  <span key={tag} className="rounded bg-white/5 px-2.5 py-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">{tag}</span>
+                ))}
+              </div>
+              <a href={project.url || project.repoUrl || "#"} target="_blank" rel="noopener noreferrer" className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-cyan-300 hover:text-white">
+                {copy.viewProject} <ArrowRight size={15} />
+              </a>
+            </article>
+          ))}
+        </main>
+
+        <footer className="border-t border-white/10 pt-8 text-xs font-bold uppercase tracking-[0.3em] text-slate-600">
+          System profile / {currentYear}
+        </footer>
+      </div>
+    </div>
+  );
+};
+
+const CleanResumeSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <section className="break-inside-avoid">
+    <h2 className="mb-3 border-b border-slate-200 pb-2 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">{title}</h2>
+    {children}
+  </section>
 );
 
 const ExecutiveArchitectLayout = ({ user, projects, currentYear, copy }: any) => (

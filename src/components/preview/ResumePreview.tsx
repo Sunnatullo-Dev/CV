@@ -22,7 +22,7 @@ import { Button } from '../shared/Button';
 import { analyzeResume } from '../../lib/ats';
 import { buildResumeMarkdown, downloadBlob, downloadResumeDocx, downloadResumePdf, getResumeFileBaseName } from '../../lib/export';
 
-type CvTemplateId = 'ats-classic' | 'modern-sidebar' | 'timeline-pro' | 'executive-compact';
+type CvTemplateId = 'ats-classic' | 'modern-sidebar' | 'timeline-pro' | 'executive-compact' | 'ats-clean' | 'one-page-premium' | 'software-engineer';
 
 interface ResumePreviewProps {
   user: User;
@@ -56,6 +56,11 @@ const COPY = {
     linksFallback: 'GitHub / LinkedIn / Website',
     timelineCv: 'Timeline CV',
     executiveCv: 'Executive CV',
+    atsCleanCv: 'ATS Clean CV',
+    onePageCv: 'One Page Premium',
+    softwareEngineerCv: 'Software Engineer Resume',
+    coreStack: 'Core stack',
+    impactHighlights: 'Impact highlights',
   },
   en: {
     title: 'Modern CV templates',
@@ -82,6 +87,11 @@ const COPY = {
     linksFallback: 'GitHub / LinkedIn / Website',
     timelineCv: 'Timeline CV',
     executiveCv: 'Executive CV',
+    atsCleanCv: 'ATS Clean CV',
+    onePageCv: 'One Page Premium',
+    softwareEngineerCv: 'Software Engineer Resume',
+    coreStack: 'Core stack',
+    impactHighlights: 'Impact highlights',
   },
   ru: {
     title: 'Современные CV-шаблоны',
@@ -108,6 +118,11 @@ const COPY = {
     linksFallback: 'GitHub / LinkedIn / Website',
     timelineCv: 'Timeline CV',
     executiveCv: 'Executive CV',
+    atsCleanCv: 'ATS Clean CV',
+    onePageCv: 'One Page Premium',
+    softwareEngineerCv: 'Software Engineer Resume',
+    coreStack: 'Core stack',
+    impactHighlights: 'Impact highlights',
   },
 };
 
@@ -124,6 +139,18 @@ const CV_TEMPLATES: Array<{
     icon: BriefcaseBusiness,
   },
   {
+    id: 'ats-clean',
+    icon: ShieldCheck,
+  },
+  {
+    id: 'one-page-premium',
+    icon: FileText,
+  },
+  {
+    id: 'software-engineer',
+    icon: BriefcaseBusiness,
+  },
+  {
     id: 'executive-compact',
     icon: Sparkles,
   },
@@ -137,18 +164,27 @@ const TEMPLATE_COPY: Record<AppLanguage, Record<CvTemplateId, { name: string; au
   uz: {
     'modern-sidebar': { name: 'Modern Sidebar', audience: 'Tech CV / portfolio PDF' },
     'timeline-pro': { name: 'Timeline Pro', audience: "Tajribaga yo'naltirilgan resume" },
+    'ats-clean': { name: 'ATS Clean CV', audience: "Ishga topshirish uchun toza format" },
+    'one-page-premium': { name: 'One Page Premium', audience: '1 sahifalik premium CV' },
+    'software-engineer': { name: 'Software Engineer Resume', audience: 'Stack, impact va loyihalar' },
     'executive-compact': { name: 'Executive Compact', audience: 'Senior / architect profil' },
     'ats-classic': { name: 'ATS Classic', audience: "Maksimal ATS o'qilishi" },
   },
   en: {
     'modern-sidebar': { name: 'Modern Sidebar', audience: 'Tech CV / portfolio PDF' },
     'timeline-pro': { name: 'Timeline Pro', audience: 'Experience-focused resume' },
+    'ats-clean': { name: 'ATS Clean CV', audience: 'Clean job application format' },
+    'one-page-premium': { name: 'One Page Premium', audience: 'Premium one-page CV' },
+    'software-engineer': { name: 'Software Engineer Resume', audience: 'Stack, impact, and projects' },
     'executive-compact': { name: 'Executive Compact', audience: 'Senior / architect profile' },
     'ats-classic': { name: 'ATS Classic', audience: 'Maximum ATS readability' },
   },
   ru: {
     'modern-sidebar': { name: 'Modern Sidebar', audience: 'Tech CV / portfolio PDF' },
     'timeline-pro': { name: 'Timeline Pro', audience: 'CV с акцентом на опыт' },
+    'ats-clean': { name: 'ATS Clean CV', audience: 'Чистый формат для отклика' },
+    'one-page-premium': { name: 'One Page Premium', audience: 'Премиум CV на одну страницу' },
+    'software-engineer': { name: 'Software Engineer Resume', audience: 'Stack, impact и проекты' },
     'executive-compact': { name: 'Executive Compact', audience: 'Senior / architect профиль' },
     'ats-classic': { name: 'ATS Classic', audience: 'Максимальная читаемость ATS' },
   },
@@ -305,6 +341,9 @@ export const ResumePreview = ({ user, projects, language }: ResumePreviewProps) 
       {templateId === 'ats-classic' && <AtsClassicTemplate user={user} resume={resume} copy={copy} language={language} />}
       {templateId === 'modern-sidebar' && <ModernSidebarTemplate user={user} resume={resume} copy={copy} language={language} />}
       {templateId === 'timeline-pro' && <TimelineProTemplate user={user} resume={resume} copy={copy} language={language} />}
+      {templateId === 'ats-clean' && <AtsCleanTemplate user={user} resume={resume} copy={copy} language={language} />}
+      {templateId === 'one-page-premium' && <OnePagePremiumTemplate user={user} resume={resume} copy={copy} language={language} />}
+      {templateId === 'software-engineer' && <SoftwareEngineerTemplate user={user} resume={resume} copy={copy} language={language} />}
       {templateId === 'executive-compact' && <ExecutiveCompactTemplate user={user} resume={resume} copy={copy} language={language} />}
 
       <div className="no-print mx-auto mt-5 max-w-6xl rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600">
@@ -459,6 +498,113 @@ const ExecutiveCompactTemplate = ({ user, resume, copy, language }: TemplateProp
   </article>
 );
 
+const AtsCleanTemplate = ({ user, resume, copy, language }: TemplateProps) => (
+  <article className="resume-page mx-auto max-w-5xl bg-white p-8 shadow-sm md:p-12">
+    <header className="border-b-2 border-slate-900 pb-6">
+      <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-start">
+        <div>
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-slate-500">{copy.atsCleanCv}</p>
+          <h2 className="text-4xl font-bold tracking-normal text-slate-950">{user.fullName || copy.fallbackName}</h2>
+          <p className="mt-2 text-base font-semibold text-slate-700">{resume.headline}</p>
+          <p className="mt-1 text-sm text-slate-500">{LANGUAGE_NAMES[language]} CV</p>
+        </div>
+        <ContactLinks links={resume.contactLinks} align="right" copy={copy} />
+      </div>
+    </header>
+
+    <ResumeSection title={copy.summary}>
+      <p className="text-sm leading-7 text-slate-700">{resume.summary}</p>
+    </ResumeSection>
+
+    <ResumeSection title={copy.coreStack}>
+      <p className="text-sm leading-7 text-slate-700">{resume.skills.join(' / ')}</p>
+    </ResumeSection>
+
+    <ExperienceBlock resume={resume} copy={copy} />
+    <ProjectsBlock resume={resume} copy={copy} cardStyle="classic" />
+    <EducationLanguagesBlock resume={resume} copy={copy} />
+  </article>
+);
+
+const OnePagePremiumTemplate = ({ user, resume, copy, language }: TemplateProps) => (
+  <article className="resume-page mx-auto max-w-6xl bg-white p-6 shadow-sm md:p-10">
+    <header className="grid gap-6 border-b border-blue-200 pb-7 md:grid-cols-[1fr_0.34fr] md:items-start">
+      <div>
+        <p className="mb-3 inline-flex rounded-md bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-widest text-blue-700">{copy.onePageCv}</p>
+        <h2 className="text-4xl font-semibold leading-tight tracking-normal text-slate-950 md:text-5xl">{user.fullName || copy.fallbackName}</h2>
+        <p className="mt-3 text-lg font-semibold text-slate-700">{resume.headline}</p>
+        <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">{resume.summary}</p>
+      </div>
+      <aside className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">{LANGUAGE_NAMES[language]}</p>
+        <ContactLinks links={resume.contactLinks} copy={copy} />
+      </aside>
+    </header>
+
+    <div className="grid gap-8 py-7 md:grid-cols-[0.62fr_0.38fr]">
+      <main>
+        <ExperienceBlock resume={resume} copy={copy} />
+        <CompactProjectsBlock resume={resume} copy={copy} />
+      </main>
+
+      <aside className="space-y-6">
+        <SkillsPanel resume={resume} copy={copy} />
+        <ResumeSection title={copy.impactHighlights} compact>
+          <div className="space-y-3">
+            {resume.projects.slice(0, 3).map((project) => (
+              <p key={project.title} className="text-sm font-semibold leading-6 text-slate-700">
+                {project.impact || project.description}
+              </p>
+            ))}
+          </div>
+        </ResumeSection>
+        <EducationBlock resume={resume} copy={copy} compact />
+      </aside>
+    </div>
+  </article>
+);
+
+const SoftwareEngineerTemplate = ({ user, resume, copy, language }: TemplateProps) => (
+  <article className="resume-page mx-auto max-w-6xl bg-white shadow-sm">
+    <header className="bg-slate-950 p-8 text-white md:p-10">
+      <div className="grid gap-6 md:grid-cols-[1fr_0.34fr] md:items-end">
+        <div>
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.24em] text-cyan-300">{copy.softwareEngineerCv}</p>
+          <h2 className="text-4xl font-black leading-tight tracking-normal md:text-5xl">{user.fullName || copy.fallbackName}</h2>
+          <p className="mt-3 text-lg font-semibold text-slate-200">{resume.headline}</p>
+          <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300">{resume.summary}</p>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+          <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">{copy.contact}</p>
+          <ContactLinks links={resume.contactLinks} variant="dark" copy={copy} />
+        </div>
+      </div>
+    </header>
+
+    <div className="grid gap-8 p-8 md:grid-cols-[0.34fr_0.66fr] md:p-10">
+      <aside className="space-y-7">
+        <section className="break-inside-avoid rounded-xl border border-cyan-100 bg-cyan-50/50 p-5">
+          <SectionHeading>{copy.coreStack}</SectionHeading>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {resume.skills.map((skill) => (
+              <span key={skill} className="rounded-md bg-white px-2.5 py-1 text-xs font-bold text-slate-700 shadow-sm">{skill}</span>
+            ))}
+          </div>
+        </section>
+        <EducationBlock resume={resume} copy={copy} compact />
+        <ResumeSection title={copy.languages} compact>
+          <p className="text-sm leading-7 text-slate-700">{resume.languages.join(', ')}</p>
+        </ResumeSection>
+      </aside>
+
+      <main>
+        <ExperienceBlock resume={resume} copy={copy} />
+        <ProjectsBlock resume={resume} copy={copy} cardStyle="modern" />
+      </main>
+    </div>
+  </article>
+);
+
 interface TemplateProps {
   user: User;
   resume: ResumeData;
@@ -592,6 +738,27 @@ const ProjectsBlock = ({
             <p className="mt-2 text-sm leading-6 text-slate-700">{project.description}</p>
             {project.impact && <p className="mt-2 text-sm font-semibold leading-6 text-slate-800">{project.impact}</p>}
             <p className="mt-3 text-xs font-semibold text-slate-500">{project.tags.join(' / ')}</p>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p className="text-sm text-slate-500">{copy.empty}</p>
+    )}
+  </ResumeSection>
+);
+
+const CompactProjectsBlock = ({ resume, copy }: { resume: ResumeData; copy: typeof COPY['uz'] }) => (
+  <ResumeSection title={copy.projects} compact>
+    {resume.projects.length ? (
+      <div className="space-y-4">
+        {resume.projects.slice(0, 4).map((project) => (
+          <div key={project.title} className="break-inside-avoid border-l-2 border-blue-200 pl-4">
+            <div className="flex flex-col gap-1 md:flex-row md:items-baseline md:justify-between">
+              <h4 className="text-sm font-bold text-slate-950">{project.title}</h4>
+              {project.role && <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">{project.role}</p>}
+            </div>
+            <p className="mt-2 text-sm leading-6 text-slate-700">{project.description}</p>
+            <p className="mt-2 text-xs font-semibold text-slate-500">{project.tags.slice(0, 4).join(' / ')}</p>
           </div>
         ))}
       </div>

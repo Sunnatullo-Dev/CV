@@ -70,6 +70,21 @@ const TEMPLATE_OPTIONS = [
     swatch: "from-amber-400 to-slate-900",
   },
   {
+    id: "ats-clean",
+    name: "ATS Clean CV",
+    swatch: "from-white to-slate-800",
+  },
+  {
+    id: "one-page-premium",
+    name: "One Page Premium",
+    swatch: "from-blue-200 to-slate-950",
+  },
+  {
+    id: "software-engineer",
+    name: "Software Engineer Resume",
+    swatch: "from-cyan-300 to-zinc-950",
+  },
+  {
     id: "executive-architect",
     name: "Executive Architect",
     swatch: "from-stone-400 to-slate-950",

@@ -28,6 +28,9 @@ export const APP_COPY = {
       templates: {
         "premium-developer": { role: "Developer portfolio", tone: "Toza premium" },
         "case-study-pro": { role: "Loyiha va natijalar", tone: "Case study uslubi" },
+        "ats-clean": { role: "Ishga topshirish CV", tone: "ATS uchun toza" },
+        "one-page-premium": { role: "1 sahifalik premium CV", tone: "Rekruterga tayyor" },
+        "software-engineer": { role: "Software engineer resume", tone: "Stack va impact" },
         "executive-architect": { role: "Senior va architect", tone: "Sokin premium" },
         "modern-technical": { role: "Backend va full-stack", tone: "Texnik dark" },
         "modern-minimalist": { role: "Frontend va product", tone: "Yorqin minimal" },
@@ -228,6 +231,9 @@ export const APP_COPY = {
       templates: {
         "premium-developer": { role: "Developer portfolio", tone: "Clean premium" },
         "case-study-pro": { role: "Projects and outcomes", tone: "Case study style" },
+        "ats-clean": { role: "Job application CV", tone: "ATS clean" },
+        "one-page-premium": { role: "One-page premium CV", tone: "Recruiter ready" },
+        "software-engineer": { role: "Software engineer resume", tone: "Stack and impact" },
         "executive-architect": { role: "Senior and architect", tone: "Calm premium" },
         "modern-technical": { role: "Backend and full-stack", tone: "Technical dark" },
         "modern-minimalist": { role: "Frontend and product", tone: "Bright minimal" },
@@ -428,6 +434,9 @@ export const APP_COPY = {
       templates: {
         "premium-developer": { role: "Портфолио разработчика", tone: "Чистый premium" },
         "case-study-pro": { role: "Проекты и результаты", tone: "Стиль case study" },
+        "ats-clean": { role: "CV для отклика", tone: "Чистый ATS" },
+        "one-page-premium": { role: "Премиум CV на 1 страницу", tone: "Готово для рекрутера" },
+        "software-engineer": { role: "Software engineer resume", tone: "Stack и impact" },
         "executive-architect": { role: "Senior и архитектор", tone: "Спокойный premium" },
         "modern-technical": { role: "Backend и full-stack", tone: "Технический dark" },
         "modern-minimalist": { role: "Frontend и product", tone: "Светлый minimal" },
