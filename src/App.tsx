@@ -4,17 +4,16 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Dashboard } from './components/Dashboard';
+import { SimpleStudio } from './components/SimpleStudio';
 import { PortfolioPreview } from './components/preview/PortfolioPreview';
 import { ResumePreview } from './components/preview/ResumePreview';
-import { PortfolioWizard } from './components/wizard/PortfolioWizard';
 import { AppLanguage, Project, PublishedPortfolio, User } from './types';
 import { cn } from './lib/utils';
 import { LANGUAGE_LABELS } from './lib/resume';
-import { Download, Edit3, Eye, FileText, Home, Sparkles } from 'lucide-react';
+import { Download, Eye, FileText, Home } from 'lucide-react';
 import { useTelegram } from './hooks/useTelegram';
 
-type AppView = 'dashboard' | 'wizard' | 'preview' | 'resume';
+type AppView = 'studio' | 'portfolio' | 'resume';
 
 type SavedWorkspace = {
   user?: User;
@@ -31,18 +30,16 @@ type BeforeInstallPromptEvent = Event & {
 
 const STORAGE_KEY = 'devport.workspace.v1';
 
-const NAV_ITEMS: Array<{ id: AppView | 'ai'; label: string; icon: React.ElementType }> = [
-  { id: 'dashboard', label: 'Studio', icon: Home },
-  { id: 'wizard', label: 'Builder', icon: Edit3 },
-  { id: 'preview', label: 'Preview', icon: Eye },
+const NAV_ITEMS: Array<{ id: AppView; label: string; icon: React.ElementType }> = [
+  { id: 'studio', label: 'Studio', icon: Home },
+  { id: 'portfolio', label: 'Portfolio', icon: Eye },
   { id: 'resume', label: 'CV', icon: FileText },
-  { id: 'ai', label: 'AI CV', icon: Sparkles },
 ];
 
 const DEFAULT_USER: User = {
   id: '1',
-  fullName: 'Samandarov Sunnatulla',
-  bio: "Full-stack Developer va Senior Solution Architect. Murakkab biznes jarayonlarini tez, ishonchli va oson kengayadigan raqamli mahsulotlarga aylantirishga ixtisoslashganman.",
+  fullName: '',
+  bio: '',
   experienceSummary: '',
   githubUsername: '',
   socialLinks: {
@@ -73,10 +70,9 @@ const loadSavedWorkspace = (): SavedWorkspace | null => {
 export default function App() {
   const { tg, user: tgUser } = useTelegram();
   const savedWorkspace = useMemo(() => loadSavedWorkspace(), []);
-  const [view, setView] = useState<AppView>('dashboard');
-  const [selectedTemplate, setSelectedTemplate] = useState(savedWorkspace?.selectedTemplate || 'minimalist');
+  const [view, setView] = useState<AppView>('studio');
+  const [selectedTemplate, setSelectedTemplate] = useState(savedWorkspace?.selectedTemplate || 'premium-developer');
   const [language, setLanguage] = useState<AppLanguage>(savedWorkspace?.language || 'uz');
-  const [showAiModal, setShowAiModal] = useState(false);
   const publishedSlug = useMemo(() => {
     if (typeof window === 'undefined') return null;
     const match = window.location.pathname.match(/^\/p\/([^/?#]+)/);
@@ -168,39 +164,38 @@ export default function App() {
   }, [language, projects, selectedTemplate, user]);
 
   useEffect(() => {
-    if (view === 'wizard') {
-      tg.MainButton.text = 'SAQLASH VA DAVOM ETISH';
-      tg.MainButton.show();
-      tg.BackButton.show();
-    } else {
-      tg.MainButton.hide();
+    tg.MainButton.hide();
+    if (view === 'studio') {
       tg.BackButton.hide();
+    } else {
+      tg.BackButton.show();
     }
 
-    const onBack = () => setView('dashboard');
+    const onBack = () => setView('studio');
     tg.onEvent('backButtonClicked', onBack);
     return () => tg.offEvent('backButtonClicked', onBack);
   }, [view, tg]);
 
   const activeTitle = useMemo(() => {
-    if (view === 'wizard') return 'Portfolio builder';
-    if (view === 'preview') return 'Live preview';
-    if (view === 'resume') return 'ATS CV preview';
-    return 'Professional studio';
+    if (view === 'portfolio') return 'Portfolio preview';
+    if (view === 'resume') return 'CV preview';
+    return 'Simple CV studio';
   }, [view]);
 
-  const openAiCv = () => {
-    setView('wizard');
-    setShowAiModal(true);
+  const handleNavigate = (target: AppView) => {
+    setView(target);
   };
 
-  const handleNavigate = (target: AppView | 'ai') => {
-    if (target === 'ai') {
-      openAiCv();
-      return;
+  const handleResetWorkspace = () => {
+    setUser(DEFAULT_USER);
+    setProjects([]);
+    setSelectedTemplate('premium-developer');
+    setLanguage('uz');
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Storage access can fail in restricted browsers.
     }
-    setShowAiModal(false);
-    setView(target);
   };
 
   const handleInstallApp = async () => {
@@ -248,7 +243,7 @@ export default function App() {
     <div className="min-h-screen overflow-x-hidden bg-[#f6f8fb] text-slate-950">
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-4 md:px-6">
-          <button onClick={() => handleNavigate('dashboard')} className="flex min-w-0 items-center gap-3 text-left">
+          <button onClick={() => handleNavigate('studio')} className="flex min-w-0 items-center gap-3 text-left">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-950 text-sm font-bold text-white">
               DP
             </div>
@@ -263,7 +258,7 @@ export default function App() {
               <NavButton
                 key={item.id}
                 item={item}
-                isActive={item.id === 'ai' ? showAiModal : view === item.id}
+                isActive={view === item.id}
                 onClick={() => handleNavigate(item.id)}
               />
             ))}
@@ -274,19 +269,8 @@ export default function App() {
       </header>
 
       <main className="pb-28 md:pb-8">
-        {view === 'dashboard' && (
-          <Dashboard
-            user={user}
-            setUser={setUser}
-            projectsCount={projects.length}
-            onOpenWizard={() => handleNavigate('wizard')}
-            onOpenPreview={() => handleNavigate('preview')}
-            onOpenAi={openAiCv}
-          />
-        )}
-
-        {view === 'wizard' && (
-          <PortfolioWizard
+        {view === 'studio' && (
+          <SimpleStudio
             user={user}
             setUser={setUser}
             projects={projects}
@@ -294,14 +278,13 @@ export default function App() {
             selectedTemplate={selectedTemplate}
             setSelectedTemplate={setSelectedTemplate}
             language={language}
-            onOpenPreview={() => handleNavigate('preview')}
-            onOpenResume={() => handleNavigate('resume')}
-            isAiModalOpen={showAiModal}
-            onAiModalClose={() => setShowAiModal(false)}
+            onOpenPortfolio={() => handleNavigate('portfolio')}
+            onOpenCv={() => handleNavigate('resume')}
+            onResetWorkspace={handleResetWorkspace}
           />
         )}
 
-        {view === 'preview' && (
+        {view === 'portfolio' && (
           <div className="portfolio-preview-shell bg-white">
             <PortfolioPreview user={user} projects={projects} templateId={selectedTemplate} language={language} />
           </div>
@@ -322,12 +305,12 @@ export default function App() {
         </button>
       )}
 
-      <nav className="fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-50 grid grid-cols-5 rounded-lg border border-slate-200 bg-white p-1 shadow-xl shadow-slate-900/10 md:hidden">
+      <nav className="fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-50 grid grid-cols-3 rounded-lg border border-slate-200 bg-white p-1 shadow-xl shadow-slate-900/10 md:hidden">
         {NAV_ITEMS.map((item) => (
           <NavButton
             key={item.id}
             item={item}
-            isActive={item.id === 'ai' ? showAiModal : view === item.id}
+            isActive={view === item.id}
             onClick={() => handleNavigate(item.id)}
             compact
           />
@@ -343,7 +326,7 @@ const NavButton = ({
   onClick,
   compact = false,
 }: {
-  item: { id: AppView | 'ai'; label: string; icon: React.ElementType };
+  item: { id: AppView; label: string; icon: React.ElementType };
   isActive: boolean;
   onClick: () => void;
   compact?: boolean;
