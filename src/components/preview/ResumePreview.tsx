@@ -22,7 +22,18 @@ import { Button } from '../shared/Button';
 import { analyzeResume } from '../../lib/ats';
 import { buildResumeMarkdown, downloadBlob, downloadResumeDocx, downloadResumePdf, getResumeFileBaseName } from '../../lib/export';
 
-type CvTemplateId = 'ats-classic' | 'modern-sidebar' | 'classic-sidebar' | 'timeline-pro' | 'executive-compact' | 'ats-clean' | 'one-page-premium' | 'software-engineer';
+type CvTemplateId =
+  | 'ats-classic'
+  | 'modern-sidebar'
+  | 'classic-sidebar'
+  | 'recruiter-pro'
+  | 'europass-international'
+  | 'tech-compact'
+  | 'timeline-pro'
+  | 'executive-compact'
+  | 'ats-clean'
+  | 'one-page-premium'
+  | 'software-engineer';
 
 interface ResumePreviewProps {
   user: User;
@@ -57,6 +68,9 @@ const COPY = {
     timelineCv: 'Timeline CV',
     executiveCv: 'Executive CV',
     classicSidebarCv: 'Classic Sidebar Resume',
+    recruiterProCv: 'Recruiter Pro CV',
+    europassCv: 'International Formal CV',
+    techCompactCv: 'Tech Compact Resume',
     atsCleanCv: 'ATS Clean CV',
     onePageCv: 'One Page Premium',
     softwareEngineerCv: 'Software Engineer Resume',
@@ -89,6 +103,9 @@ const COPY = {
     timelineCv: 'Timeline CV',
     executiveCv: 'Executive CV',
     classicSidebarCv: 'Classic Sidebar Resume',
+    recruiterProCv: 'Recruiter Pro CV',
+    europassCv: 'International Formal CV',
+    techCompactCv: 'Tech Compact Resume',
     atsCleanCv: 'ATS Clean CV',
     onePageCv: 'One Page Premium',
     softwareEngineerCv: 'Software Engineer Resume',
@@ -121,6 +138,9 @@ const COPY = {
     timelineCv: 'Timeline CV',
     executiveCv: 'Executive CV',
     classicSidebarCv: 'Classic Sidebar Resume',
+    recruiterProCv: 'Recruiter Pro CV',
+    europassCv: 'International Formal CV',
+    techCompactCv: 'Tech Compact Resume',
     atsCleanCv: 'ATS Clean CV',
     onePageCv: 'One Page Premium',
     softwareEngineerCv: 'Software Engineer Resume',
@@ -140,6 +160,18 @@ const CV_TEMPLATES: Array<{
   {
     id: 'classic-sidebar',
     icon: Layers3,
+  },
+  {
+    id: 'recruiter-pro',
+    icon: ShieldCheck,
+  },
+  {
+    id: 'europass-international',
+    icon: FileText,
+  },
+  {
+    id: 'tech-compact',
+    icon: BriefcaseBusiness,
   },
   {
     id: 'timeline-pro',
@@ -171,6 +203,9 @@ const TEMPLATE_COPY: Record<AppLanguage, Record<CvTemplateId, { name: string; au
   uz: {
     'modern-sidebar': { name: 'Modern Sidebar', audience: 'Tech CV / portfolio PDF' },
     'classic-sidebar': { name: 'Classic Sidebar', audience: 'Rasmli chap panel va timeline' },
+    'recruiter-pro': { name: 'Recruiter Pro', audience: "HR tez ko'radigan professional CV" },
+    'europass-international': { name: 'International Formal', audience: 'Chet el va formal arizalar' },
+    'tech-compact': { name: 'Tech Compact', audience: 'Developerlar uchun zich resume' },
     'timeline-pro': { name: 'Timeline Pro', audience: "Tajribaga yo'naltirilgan resume" },
     'ats-clean': { name: 'ATS Clean CV', audience: "Ishga topshirish uchun toza format" },
     'one-page-premium': { name: 'One Page Premium', audience: '1 sahifalik premium CV' },
@@ -181,6 +216,9 @@ const TEMPLATE_COPY: Record<AppLanguage, Record<CvTemplateId, { name: string; au
   en: {
     'modern-sidebar': { name: 'Modern Sidebar', audience: 'Tech CV / portfolio PDF' },
     'classic-sidebar': { name: 'Classic Sidebar', audience: 'Photo sidebar and timeline resume' },
+    'recruiter-pro': { name: 'Recruiter Pro', audience: 'Fast-scannable CV for HR' },
+    'europass-international': { name: 'International Formal', audience: 'Global and formal applications' },
+    'tech-compact': { name: 'Tech Compact', audience: 'Dense resume for developers' },
     'timeline-pro': { name: 'Timeline Pro', audience: 'Experience-focused resume' },
     'ats-clean': { name: 'ATS Clean CV', audience: 'Clean job application format' },
     'one-page-premium': { name: 'One Page Premium', audience: 'Premium one-page CV' },
@@ -190,6 +228,9 @@ const TEMPLATE_COPY: Record<AppLanguage, Record<CvTemplateId, { name: string; au
   },
   ru: {
     'modern-sidebar': { name: 'Modern Sidebar', audience: 'Tech CV / portfolio PDF' },
+    'recruiter-pro': { name: 'Recruiter Pro', audience: 'CV для быстрого просмотра HR' },
+    'europass-international': { name: 'International Formal', audience: 'Для международных и формальных откликов' },
+    'tech-compact': { name: 'Tech Compact', audience: 'Компактное resume для разработчиков' },
     'classic-sidebar': { name: 'Classic Sidebar', audience: 'Фото в боковой панели и timeline' },
     'timeline-pro': { name: 'Timeline Pro', audience: 'CV с акцентом на опыт' },
     'ats-clean': { name: 'ATS Clean CV', audience: 'Чистый формат для отклика' },
@@ -351,6 +392,9 @@ export const ResumePreview = ({ user, projects, language }: ResumePreviewProps) 
       {templateId === 'ats-classic' && <AtsClassicTemplate user={user} resume={resume} copy={copy} language={language} />}
       {templateId === 'modern-sidebar' && <ModernSidebarTemplate user={user} resume={resume} copy={copy} language={language} />}
       {templateId === 'classic-sidebar' && <ClassicSidebarTemplate user={user} resume={resume} copy={copy} language={language} />}
+      {templateId === 'recruiter-pro' && <RecruiterProTemplate user={user} resume={resume} copy={copy} language={language} />}
+      {templateId === 'europass-international' && <EuropassInternationalTemplate user={user} resume={resume} copy={copy} language={language} />}
+      {templateId === 'tech-compact' && <TechCompactTemplate user={user} resume={resume} copy={copy} language={language} />}
       {templateId === 'timeline-pro' && <TimelineProTemplate user={user} resume={resume} copy={copy} language={language} />}
       {templateId === 'ats-clean' && <AtsCleanTemplate user={user} resume={resume} copy={copy} language={language} />}
       {templateId === 'one-page-premium' && <OnePagePremiumTemplate user={user} resume={resume} copy={copy} language={language} />}
@@ -540,6 +584,198 @@ const ClassicSidebarTemplate = ({ user, resume, copy, language }: TemplateProps)
     </article>
   );
 };
+
+const RecruiterProTemplate = ({ user, resume, copy, language }: TemplateProps) => (
+  <article className="resume-page mx-auto max-w-6xl overflow-hidden bg-white shadow-sm">
+    <header className="grid gap-6 bg-[#f8fbff] p-7 md:grid-cols-[1fr_0.34fr] md:p-10">
+      <div>
+        <p className="mb-3 inline-flex rounded-md bg-blue-700 px-3 py-1 text-xs font-bold uppercase tracking-widest text-white">{copy.recruiterProCv}</p>
+        <h2 className="text-4xl font-semibold leading-tight tracking-normal text-slate-950 md:text-5xl">{user.fullName || copy.fallbackName}</h2>
+        <p className="mt-3 text-xl font-semibold text-blue-800">{resume.headline}</p>
+        <p className="mt-5 max-w-3xl text-sm leading-7 text-slate-700">{resume.summary}</p>
+      </div>
+
+      <aside className="rounded-xl border border-blue-100 bg-white p-5 shadow-sm">
+        <p className="text-xs font-bold uppercase tracking-widest text-blue-700">{copy.atsTitle}</p>
+        <div className="mt-4 grid gap-3">
+          <RecruiterSignal label={copy.skills} value={`${resume.skills.length}+`} />
+          <RecruiterSignal label={copy.projects} value={String(resume.projects.length)} />
+          <RecruiterSignal label={copy.languages} value={LANGUAGE_NAMES[language]} />
+        </div>
+        <div className="mt-5 border-t border-slate-200 pt-4">
+          <ContactLinks links={resume.contactLinks} copy={copy} />
+        </div>
+      </aside>
+    </header>
+
+    <main className="grid gap-8 p-7 md:grid-cols-[0.62fr_0.38fr] md:p-10">
+      <section>
+        <ResumeSection title={copy.experience} compact>
+          <div className="space-y-5">
+            {resume.experience.slice(0, 4).map((item) => (
+              <div key={`${item.company}-${item.role}`} className="break-inside-avoid rounded-xl border border-slate-200 bg-white p-4">
+                <div className="flex flex-col gap-1 md:flex-row md:items-baseline md:justify-between">
+                  <h3 className="text-base font-bold text-slate-950">{item.role}</h3>
+                  <p className="text-xs font-bold uppercase tracking-widest text-slate-400">{item.startDate} - {item.endDate}</p>
+                </div>
+                <p className="mt-1 text-sm font-semibold text-blue-800">{item.company}</p>
+                <p className="mt-2 text-sm leading-7 text-slate-700">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </ResumeSection>
+        <CompactProjectsBlock resume={resume} copy={copy} />
+      </section>
+
+      <aside className="space-y-6">
+        <SkillsPanel resume={resume} copy={copy} />
+        <ResumeSection title={copy.impactHighlights} compact>
+          <div className="space-y-3">
+            {resume.projects.slice(0, 4).map((project) => (
+              <p key={project.title} className="rounded-lg border border-emerald-100 bg-emerald-50/60 p-3 text-sm font-semibold leading-6 text-slate-800">
+                {project.impact || project.description}
+              </p>
+            ))}
+          </div>
+        </ResumeSection>
+        <EducationBlock resume={resume} copy={copy} compact />
+      </aside>
+    </main>
+  </article>
+);
+
+const EuropassInternationalTemplate = ({ user, resume, copy, language }: TemplateProps) => (
+  <article className="resume-page mx-auto max-w-6xl bg-white shadow-sm">
+    <header className="border-b-4 border-[#1f5fbf] p-7 md:p-10">
+      <div className="grid gap-6 md:grid-cols-[0.28fr_0.72fr] md:items-center">
+        <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-md border border-blue-100 bg-blue-50 text-4xl font-semibold text-blue-800">
+          {user.avatarUrl ? (
+            <img src={user.avatarUrl} alt={user.fullName || copy.fallbackName} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+          ) : (
+            (user.fullName || copy.fallbackName).charAt(0)
+          )}
+        </div>
+        <div>
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.24em] text-blue-700">{copy.europassCv}</p>
+          <h2 className="text-4xl font-semibold tracking-normal text-slate-950 md:text-5xl">{user.fullName || copy.fallbackName}</h2>
+          <p className="mt-2 text-lg font-semibold text-slate-700">{resume.headline}</p>
+        </div>
+      </div>
+    </header>
+
+    <div className="grid gap-0 md:grid-cols-[0.32fr_0.68fr]">
+      <aside className="border-r border-blue-100 bg-[#f3f7ff] p-7 md:p-8">
+        <FormalCvSection title={copy.contact}>
+          <ContactLinks links={resume.contactLinks} copy={copy} />
+        </FormalCvSection>
+        <FormalCvSection title={copy.skills}>
+          <div className="flex flex-wrap gap-2">
+            {resume.skills.map((skill) => (
+              <span key={skill} className="rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm">{skill}</span>
+            ))}
+          </div>
+        </FormalCvSection>
+        <FormalCvSection title={copy.languages}>
+          <p className="text-sm leading-7 text-slate-700">{resume.languages.join(', ')}</p>
+        </FormalCvSection>
+        <FormalCvSection title={copy.education}>
+          {resume.education.map((item) => (
+            <div key={`${item.institution}-${item.gradYear}`} className="mb-4 last:mb-0">
+              <p className="text-sm font-bold text-slate-950">{item.degree}</p>
+              <p className="mt-1 text-sm leading-6 text-slate-700">{item.institution}</p>
+              <p className="mt-1 text-xs font-bold uppercase tracking-widest text-blue-700">{item.gradYear}</p>
+            </div>
+          ))}
+        </FormalCvSection>
+      </aside>
+
+      <main className="p-7 md:p-10">
+        <FormalCvSection title={copy.summary}>
+          <p className="text-sm leading-7 text-slate-700">{resume.summary}</p>
+        </FormalCvSection>
+        <FormalCvSection title={copy.experience}>
+          <div className="space-y-5">
+            {resume.experience.map((item) => (
+              <div key={`${item.company}-${item.role}`} className="break-inside-avoid border-l-4 border-blue-200 pl-4">
+                <div className="flex flex-col gap-1 md:flex-row md:items-baseline md:justify-between">
+                  <h3 className="text-base font-bold text-slate-950">{item.role}</h3>
+                  <p className="text-xs font-bold uppercase tracking-widest text-slate-500">{item.startDate} - {item.endDate}</p>
+                </div>
+                <p className="mt-1 text-sm font-semibold text-blue-800">{item.company}</p>
+                <p className="mt-2 text-sm leading-7 text-slate-700">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </FormalCvSection>
+        <FormalCvSection title={copy.projects}>
+          <div className="grid gap-4 md:grid-cols-2">
+            {resume.projects.slice(0, 6).map((project) => (
+              <div key={project.title} className="break-inside-avoid rounded-lg border border-blue-100 bg-blue-50/40 p-4">
+                <h3 className="text-sm font-bold text-slate-950">{project.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-700">{project.description}</p>
+                <p className="mt-3 text-xs font-semibold text-blue-800">{project.tags.join(' / ')}</p>
+              </div>
+            ))}
+          </div>
+        </FormalCvSection>
+      </main>
+    </div>
+  </article>
+);
+
+const TechCompactTemplate = ({ user, resume, copy, language }: TemplateProps) => (
+  <article className="resume-page mx-auto max-w-6xl overflow-hidden bg-[#0f172a] shadow-sm">
+    <header className="grid gap-6 p-7 text-white md:grid-cols-[1fr_0.34fr] md:p-10">
+      <div>
+        <p className="mb-3 text-xs font-bold uppercase tracking-[0.24em] text-cyan-300">{copy.techCompactCv}</p>
+        <h2 className="text-4xl font-black leading-tight tracking-normal md:text-5xl">{user.fullName || copy.fallbackName}</h2>
+        <p className="mt-3 text-lg font-semibold text-slate-200">{resume.headline}</p>
+        <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300">{resume.summary}</p>
+      </div>
+      <aside className="rounded-xl border border-white/10 bg-white/5 p-4">
+        <p className="text-xs font-bold uppercase tracking-widest text-slate-400">{copy.coreStack}</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {resume.skills.slice(0, 10).map((skill) => (
+            <span key={skill} className="rounded-md border border-cyan-400/20 bg-cyan-400/10 px-2.5 py-1 text-xs font-bold text-cyan-100">{skill}</span>
+          ))}
+        </div>
+      </aside>
+    </header>
+
+    <main className="grid gap-5 bg-white p-5 md:grid-cols-[0.58fr_0.42fr] md:p-7">
+      <section className="space-y-5">
+        <CompactDarkSection title={copy.experience}>
+          {resume.experience.slice(0, 4).map((item) => (
+            <div key={`${item.company}-${item.role}`} className="break-inside-avoid rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex flex-col gap-1 md:flex-row md:items-baseline md:justify-between">
+                <h3 className="text-base font-bold text-slate-950">{item.role}</h3>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-500">{item.startDate} - {item.endDate}</p>
+              </div>
+              <p className="mt-1 text-sm font-semibold text-cyan-800">{item.company}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-700">{item.description}</p>
+            </div>
+          ))}
+        </CompactDarkSection>
+      </section>
+
+      <aside className="space-y-5">
+        <CompactDarkSection title={copy.projects}>
+          {resume.projects.slice(0, 5).map((project) => (
+            <div key={project.title} className="break-inside-avoid border-b border-slate-200 pb-4 last:border-b-0 last:pb-0">
+              <h3 className="text-sm font-bold text-slate-950">{project.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-700">{project.description}</p>
+              <p className="mt-2 text-xs font-bold uppercase tracking-widest text-slate-500">{project.tags.slice(0, 4).join(' / ')}</p>
+            </div>
+          ))}
+        </CompactDarkSection>
+        <CompactDarkSection title={copy.contact}>
+          <ContactLinks links={resume.contactLinks} copy={copy} />
+          <p className="mt-4 text-xs font-bold uppercase tracking-widest text-slate-500">{LANGUAGE_NAMES[language]} CV</p>
+        </CompactDarkSection>
+      </aside>
+    </main>
+  </article>
+);
 
 const TimelineProTemplate = ({ user, resume, copy, language }: TemplateProps) => (
   <article className="resume-page mx-auto max-w-6xl bg-white p-8 shadow-sm md:p-12">
@@ -757,6 +993,27 @@ const ClassicTimelineItem = ({
     <h4 className="mt-1 text-xl font-semibold tracking-normal text-slate-900">{title}</h4>
     <p className="mt-2 text-sm leading-7 text-slate-700">{children}</p>
   </div>
+);
+
+const RecruiterSignal = ({ label, value }: { label: string; value: string }) => (
+  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+    <p className="text-xs font-bold uppercase tracking-widest text-slate-500">{label}</p>
+    <p className="mt-1 text-xl font-semibold tracking-normal text-slate-950">{value}</p>
+  </div>
+);
+
+const FormalCvSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <section className="break-inside-avoid border-b border-blue-100 py-5 last:border-b-0">
+    <h3 className="mb-4 text-xs font-bold uppercase tracking-[0.22em] text-blue-800">{title}</h3>
+    {children}
+  </section>
+);
+
+const CompactDarkSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <section className="break-inside-avoid rounded-xl border border-slate-200 bg-white p-5">
+    <h3 className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">{title}</h3>
+    <div className="space-y-4">{children}</div>
+  </section>
 );
 
 interface TemplateProps {
