@@ -1,0 +1,21 @@
+{
+  "name": "DevPort Professional Portfolio & CV Builder",
+  "short_name": "DevPort",
+  "description": "Mobile-friendly portfolio, CV, ATS and AI resume builder for developers.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f8fb",
+  "theme_color": "#020617",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/devport-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "business", "developer"],
+  "screenshots": []
+}

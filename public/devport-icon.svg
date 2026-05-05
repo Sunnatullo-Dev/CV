@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">DevPort</title>
+  <rect width="512" height="512" rx="112" fill="#020617"/>
+  <rect x="68" y="68" width="376" height="376" rx="84" fill="#ffffff" opacity="0.06"/>
+  <path d="M146 168h92c58 0 98 36 98 88s-40 88-98 88h-92V168Zm84 128c28 0 46-15 46-40s-18-40-46-40h-28v80h28Z" fill="#ffffff"/>
+  <path d="M338 168h48v176h-48V168Z" fill="#38bdf8"/>
+  <path d="M146 374h240v34H146v-34Z" fill="#38bdf8"/>
+</svg>

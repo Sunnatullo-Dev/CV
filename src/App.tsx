@@ -11,7 +11,7 @@ import { PortfolioWizard } from './components/wizard/PortfolioWizard';
 import { AppLanguage, Project, PublishedPortfolio, User } from './types';
 import { cn } from './lib/utils';
 import { LANGUAGE_LABELS } from './lib/resume';
-import { Edit3, Eye, FileText, Home, Sparkles } from 'lucide-react';
+import { Download, Edit3, Eye, FileText, Home, Sparkles } from 'lucide-react';
 import { useTelegram } from './hooks/useTelegram';
 
 type AppView = 'dashboard' | 'wizard' | 'preview' | 'resume';
@@ -22,6 +22,11 @@ type SavedWorkspace = {
   selectedTemplate?: string;
   language?: AppLanguage;
   savedAt?: string;
+};
+
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 };
 
 const STORAGE_KEY = 'devport.workspace.v1';
@@ -80,6 +85,7 @@ export default function App() {
   const [publicPortfolioState, setPublicPortfolioState] = useState<'loading' | 'ready' | 'missing'>(
     publishedSlug ? 'loading' : 'ready',
   );
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 
   const [user, setUser] = useState<User>(() => ({
     ...DEFAULT_USER,
@@ -114,6 +120,16 @@ export default function App() {
       cancelled = true;
     };
   }, [publishedSlug]);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
 
   useEffect(() => {
     if (tgUser && !savedWorkspace?.user) {
@@ -184,6 +200,13 @@ export default function App() {
     }
     setShowAiModal(false);
     setView(target);
+  };
+
+  const handleInstallApp = async () => {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null);
   };
 
   if (publishedSlug) {
@@ -287,6 +310,16 @@ export default function App() {
           <ResumePreview user={user} projects={projects} language={language} />
         )}
       </main>
+
+      {installPrompt && (
+        <button
+          onClick={handleInstallApp}
+          className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-3 z-50 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-950 px-3 py-2 text-xs font-bold text-white shadow-xl shadow-slate-900/15 md:bottom-8 md:right-8"
+        >
+          <Download size={15} />
+          Install
+        </button>
+      )}
 
       <nav className="fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-50 grid grid-cols-5 rounded-lg border border-slate-200 bg-white p-1 shadow-xl shadow-slate-900/10 md:hidden">
         {NAV_ITEMS.map((item) => (
