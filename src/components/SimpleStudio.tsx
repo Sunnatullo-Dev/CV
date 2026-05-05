@@ -89,6 +89,31 @@ const TEMPLATE_OPTIONS = [
     name: "Minimalist Persona",
     swatch: "from-slate-300 to-slate-950",
   },
+  {
+    id: "dark",
+    name: "Dark Technical",
+    swatch: "from-indigo-500 to-black",
+  },
+  {
+    id: "bento",
+    name: "Modern Bento",
+    swatch: "from-violet-400 to-indigo-700",
+  },
+  {
+    id: "terminal",
+    name: "DevOps Terminal",
+    swatch: "from-lime-400 to-zinc-950",
+  },
+  {
+    id: "serif",
+    name: "Professional Serif",
+    swatch: "from-amber-200 to-stone-800",
+  },
+  {
+    id: "brutalist",
+    name: "Bold Founder",
+    swatch: "from-yellow-300 to-black",
+  },
 ];
 
 const emptyProjectDraft = {
