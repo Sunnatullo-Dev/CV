@@ -42,6 +42,15 @@ export interface PortfolioConfig {
   };
 }
 
+export interface PublishedPortfolio extends PortfolioConfig {
+  user: User;
+  projects: Project[];
+  language: AppLanguage;
+  url: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ResumeData {
   language: AppLanguage;
   headline: string;

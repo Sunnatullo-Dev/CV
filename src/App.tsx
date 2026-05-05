@@ -8,7 +8,7 @@ import { Dashboard } from './components/Dashboard';
 import { PortfolioPreview } from './components/preview/PortfolioPreview';
 import { ResumePreview } from './components/preview/ResumePreview';
 import { PortfolioWizard } from './components/wizard/PortfolioWizard';
-import { AppLanguage, Project, User } from './types';
+import { AppLanguage, Project, PublishedPortfolio, User } from './types';
 import { cn } from './lib/utils';
 import { LANGUAGE_LABELS } from './lib/resume';
 import { Edit3, Eye, FileText, Home, Sparkles } from 'lucide-react';
@@ -71,6 +71,15 @@ export default function App() {
   const [selectedTemplate, setSelectedTemplate] = useState(savedWorkspace?.selectedTemplate || 'minimalist');
   const [language, setLanguage] = useState<AppLanguage>(savedWorkspace?.language || 'uz');
   const [showAiModal, setShowAiModal] = useState(false);
+  const publishedSlug = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    const match = window.location.pathname.match(/^\/p\/([^/?#]+)/);
+    return match ? decodeURIComponent(match[1]) : null;
+  }, []);
+  const [publicPortfolio, setPublicPortfolio] = useState<PublishedPortfolio | null>(null);
+  const [publicPortfolioState, setPublicPortfolioState] = useState<'loading' | 'ready' | 'missing'>(
+    publishedSlug ? 'loading' : 'ready',
+  );
 
   const [user, setUser] = useState<User>(() => ({
     ...DEFAULT_USER,
@@ -82,6 +91,29 @@ export default function App() {
   }));
 
   const [projects, setProjects] = useState<Project[]>(savedWorkspace?.projects || []);
+
+  useEffect(() => {
+    if (!publishedSlug) return;
+
+    let cancelled = false;
+    setPublicPortfolioState('loading');
+
+    fetch(`/api/portfolio/${publishedSlug}`)
+      .then((response) => (response.ok ? response.json() : Promise.reject(new Error('Portfolio not found'))))
+      .then((payload) => {
+        if (cancelled) return;
+        setPublicPortfolio(payload.data);
+        setPublicPortfolioState('ready');
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setPublicPortfolioState('missing');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [publishedSlug]);
 
   useEffect(() => {
     if (tgUser && !savedWorkspace?.user) {
@@ -153,6 +185,40 @@ export default function App() {
     setShowAiModal(false);
     setView(target);
   };
+
+  if (publishedSlug) {
+    if (publicPortfolioState === 'loading') {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 text-slate-950">
+          <div className="rounded-lg border border-slate-200 bg-white p-6 text-center shadow-sm">
+            <p className="text-sm font-semibold text-slate-600">Portfolio yuklanmoqda...</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (!publicPortfolio) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 text-slate-950">
+          <div className="max-w-sm rounded-lg border border-slate-200 bg-white p-6 text-center shadow-sm">
+            <p className="text-lg font-semibold text-slate-950">Portfolio topilmadi</p>
+            <p className="mt-2 text-sm leading-6 text-slate-500">Link eskirgan yoki hali publish qilinmagan bo'lishi mumkin.</p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="portfolio-preview-shell bg-white">
+        <PortfolioPreview
+          user={publicPortfolio.user}
+          projects={publicPortfolio.projects}
+          templateId={publicPortfolio.templateId}
+          language={publicPortfolio.language}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#f6f8fb] text-slate-950">

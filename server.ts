@@ -3,6 +3,50 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import axios from "axios";
 import crypto from "crypto";
+import fs from "fs/promises";
+
+const DATA_DIR = path.join(process.cwd(), ".data");
+const PORTFOLIOS_FILE = path.join(DATA_DIR, "portfolios.json");
+
+type StoredPortfolio = {
+  id: string;
+  userId: string;
+  slug: string;
+  templateId: string;
+  published: boolean;
+  settings: Record<string, unknown>;
+  user: Record<string, unknown>;
+  projects: unknown[];
+  language: string;
+  url: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type PortfolioStore = Record<string, StoredPortfolio>;
+
+const readPortfolioStore = async (): Promise<PortfolioStore> => {
+  try {
+    const raw = await fs.readFile(PORTFOLIOS_FILE, "utf8");
+    return JSON.parse(raw) as PortfolioStore;
+  } catch {
+    return {};
+  }
+};
+
+const writePortfolioStore = async (store: PortfolioStore) => {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.writeFile(PORTFOLIOS_FILE, JSON.stringify(store, null, 2), "utf8");
+};
+
+const createSlug = (value: string) => (
+  value
+    .toLowerCase()
+    .replace(/^@/, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64)
+);
 
 // Telegram InitData Verification
 function verifyTelegramInitData(initData: string): boolean {
@@ -67,40 +111,65 @@ async function startServer() {
     }
   });
 
-  // PDF Export API (Placeholder - MVP uchun backend logikasi)
+  // PDF Export API (structured export fallback)
   app.post("/api/export/pdf", async (req, res) => {
     const { resumeData } = req.body;
-    // Kelajakda WeasyPrint yoki Puppeteer integratsiyasi uchun joy
-    res.json({ message: "PDF generation logic will be implemented here", data: resumeData });
+    res.json({ message: "Use the client PDF exporter or browser print dialog.", data: resumeData });
   });
 
   // Portfolio Generate API
-  app.post("/api/portfolio/generate", (req, res) => {
-    const { userId, githubUsername, templateId, settings } = req.body;
+  app.post("/api/portfolio/generate", async (req, res) => {
+    const { userId, githubUsername, templateId, settings, user, projects, language } = req.body;
+    const username = githubUsername || user?.githubUsername;
     
-    if (!githubUsername) {
+    if (!username) {
       return res.status(400).json({ error: "GitHub username is required" });
     }
 
-    // Dynamic slug yaratish
-    const slug = githubUsername.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    const slug = createSlug(username);
+    if (!slug) {
+      return res.status(400).json({ error: "Valid GitHub username is required" });
+    }
     
-    // Kelajakda bu yerda DB (PostgreSQL) ga saqlash logikasi bo'ladi
-    const portfolioConfig = {
-      id: Math.random().toString(36).substr(2, 9),
+    const store = await readPortfolioStore();
+    const now = new Date().toISOString();
+    const existing = store[slug];
+    const url = `${process.env.APP_URL || "http://localhost:3000"}/p/${slug}`;
+    const portfolioConfig: StoredPortfolio = {
+      id: existing?.id || crypto.randomUUID(),
       userId,
       slug,
       templateId,
-      settings,
+      settings: settings || { primaryColor: "#000", fontFamily: "Inter", showGithubStats: true },
+      user: user || { githubUsername: username },
+      projects: Array.isArray(projects) ? projects : [],
+      language: language || "uz",
       published: true,
-      url: `${process.env.APP_URL || "http://localhost:3000"}/p/${slug}`
+      url,
+      createdAt: existing?.createdAt || now,
+      updatedAt: now,
     };
+
+    store[slug] = portfolioConfig;
+    await writePortfolioStore(store);
 
     res.json({ 
       success: true, 
       message: "Portfolio successfully generated", 
       data: portfolioConfig 
     });
+  });
+
+  app.get("/api/portfolio/:slug", async (req, res) => {
+    const slug = createSlug(req.params.slug);
+    const store = await readPortfolioStore();
+    const portfolio = store[slug];
+
+    if (!portfolio) {
+      return res.status(404).json({ error: "Portfolio not found" });
+    }
+
+    res.json({ success: true, data: portfolio });
   });
 
   // Vite middleware for development

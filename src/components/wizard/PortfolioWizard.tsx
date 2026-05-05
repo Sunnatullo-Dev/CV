@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "../shared/Button";
-import { ChevronRight, ChevronLeft, Github, Layout, CheckCircle, FileText, Loader2, Rocket, Linkedin, Twitter, Globe, ArrowUp, ArrowDown, Terminal, Sparkles, BrainCircuit, Lightbulb, Info, FileJson, FileUser, Copy, Download, Cpu, Edit3, Save, X, Monitor } from "lucide-react";
+import { ChevronRight, ChevronLeft, Github, Layout, CheckCircle, FileText, Loader2, Rocket, Linkedin, Twitter, Globe, ArrowUp, ArrowDown, Terminal, Sparkles, BrainCircuit, Lightbulb, Info, FileJson, FileUser, Copy, Download, Cpu, Edit3, Save, X, Monitor, QrCode, Share2 } from "lucide-react";
 import axios from "axios";
 import { cn } from "../../lib/utils";
 import { AppLanguage, User, Project } from "../../types";
@@ -239,6 +239,9 @@ export const PortfolioWizard = ({
         userId: user.id || "1",
         githubUsername: user.githubUsername,
         templateId: selectedTemplate,
+        user,
+        projects: projects.filter((project) => project.isPublic !== false),
+        language,
         settings: { primaryColor: "#000", fontFamily: "Inter" }
       });
       const result = response.data;
@@ -326,7 +329,7 @@ export const PortfolioWizard = ({
                     if (!cvContent) fetchAiCV();
                   }}
                   onCopyLink={async () => {
-                    const url = publishedUrl || `devport.uz/${user.githubUsername || "username"}`;
+                    const url = publishedUrl || `https://devport.uz/${user.githubUsername || "username"}`;
                     await navigator.clipboard.writeText(url);
                     setLinkCopyState('copied');
                     window.setTimeout(() => setLinkCopyState('idle'), 1800);
@@ -1830,6 +1833,8 @@ const PublishStep = ({
 }) => {
   const publicProjects = projects.filter((project) => project.isPublic !== false).length;
   const readyUrl = publishedUrl || `devport.uz/${user.githubUsername || "username"}`;
+  const shareUrl = readyUrl.startsWith("http") ? readyUrl : `https://${readyUrl}`;
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const completionItems = [
     { label: "Profil", value: user.fullName ? "Tayyor" : "Kerak" },
     { label: "Bio", value: user.bio.length > 80 ? "Tayyor" : "Qisqa" },
@@ -1837,6 +1842,43 @@ const PublishStep = ({
     { label: "Template", value: selectedTemplate },
     { label: "Til", value: language.toUpperCase() },
   ];
+
+  useEffect(() => {
+    let cancelled = false;
+
+    import("qrcode")
+      .then((module) => module.default.toDataURL(shareUrl, {
+        margin: 1,
+        width: 180,
+        color: {
+          dark: "#020617",
+          light: "#ffffff",
+        },
+      }))
+      .then((dataUrl) => {
+        if (!cancelled) setQrDataUrl(dataUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setQrDataUrl(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [shareUrl]);
+
+  const handleShare = async () => {
+    if ("share" in navigator) {
+      await navigator.share({
+        title: `${user.fullName || "DevPort"} portfolio`,
+        text: "Professional portfolio va CV paketi",
+        url: shareUrl,
+      });
+      return;
+    }
+
+    onCopyLink();
+  };
 
   return (
     <div className="space-y-6 py-2">
@@ -1884,22 +1926,53 @@ const PublishStep = ({
       </div>
 
       <div className="rounded-3xl border border-slate-200 bg-slate-950 p-5 text-white">
-        <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="grid gap-5 md:grid-cols-[auto_1fr] md:items-center">
+          <div className="flex justify-center">
+            <div className="rounded-2xl border border-white/10 bg-white p-3 shadow-xl">
+              {qrDataUrl ? (
+                <img src={qrDataUrl} alt="Portfolio QR code" className="h-36 w-36" />
+              ) : (
+                <div className="flex h-36 w-36 items-center justify-center text-slate-400">
+                  <QrCode size={34} />
+                </div>
+              )}
+            </div>
+          </div>
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Public link</p>
-            <p className="mt-2 break-all text-sm font-bold text-slate-100">{readyUrl}</p>
+            <p className="mt-2 break-all text-sm font-bold text-slate-100">{shareUrl}</p>
+            <p className="mt-3 text-xs leading-6 text-slate-400">
+              "Tayyor variantni chiqarish" bosilgandan keyin ushbu link serverda saqlanadi. QR code, copy va native share orqali yuborish mumkin.
+            </p>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <button
+                onClick={onCopyLink}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-widest text-slate-950 hover:bg-slate-100"
+              >
+                <Copy size={14} />
+                {linkCopyState === 'copied' ? 'Nusxalandi' : 'Copy'}
+              </button>
+              <button
+                onClick={handleShare}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-xs font-black uppercase tracking-widest text-white hover:bg-white/15"
+              >
+                <Share2 size={14} />
+                Share
+              </button>
+              {publishedUrl && (
+                <a
+                  href={shareUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-xs font-black uppercase tracking-widest text-white hover:bg-white/15"
+                >
+                  <Globe size={14} />
+                  Open
+                </a>
+              )}
+            </div>
           </div>
-          <button
-            onClick={onCopyLink}
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-widest text-slate-950 hover:bg-slate-100"
-          >
-            <Copy size={14} />
-            {linkCopyState === 'copied' ? 'Nusxalandi' : 'Copy'}
-          </button>
         </div>
-        <p className="text-xs leading-6 text-slate-400">
-          “Tayyor variantni chiqarish” bosilgandan keyin ushbu link backend generate flow orqali tasdiqlanadi. Preview va CV esa hozirning o'zida tayyor.
-        </p>
       </div>
     </div>
   );
