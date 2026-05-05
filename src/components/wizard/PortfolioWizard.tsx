@@ -153,6 +153,11 @@ export const PortfolioWizard = ({
     }
   };
 
+  useEffect(() => {
+    if (!showAiModal || activeAiTab !== 'cv' || cvContent || isGeneratingCv) return;
+    fetchAiCV();
+  }, [activeAiTab, cvContent, isGeneratingCv, showAiModal]);
+
   const fetchAiTips = async () => {
     if (projects.length === 0) return;
     setIsGeneratingTips(true);

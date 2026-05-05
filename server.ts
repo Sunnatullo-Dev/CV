@@ -1,12 +1,16 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
+import dotenv from "dotenv";
 import axios from "axios";
 import crypto from "crypto";
 import fs from "fs/promises";
 import { GoogleGenAI } from "@google/genai";
 import { buildResumeData } from "./src/lib/resume";
 import type { AppLanguage, Project, ResumeData, User } from "./src/types";
+
+dotenv.config({ path: path.join(process.cwd(), ".env.local") });
+dotenv.config({ path: path.join(process.cwd(), ".env") });
 
 const DATA_DIR = path.join(process.cwd(), ".data");
 const PORTFOLIOS_FILE = path.join(DATA_DIR, "portfolios.json");
@@ -159,7 +163,7 @@ async function startServer() {
   app.post("/api/ai/recommendations", async (req, res) => {
     const { user, projects, language } = getResumeInput(req.body);
     const ai = getAiClient();
-    if (!ai) return res.json({ tips: fallbackTips });
+    if (!ai) return res.json({ tips: fallbackTips, source: "fallback" });
 
     try {
       const response = await ai.models.generateContent({
@@ -180,16 +184,16 @@ async function startServer() {
       const text = response.text || "";
       const jsonMatch = text.match(/\[.*\]/s);
       const tips = jsonMatch ? JSON.parse(jsonMatch[0]) : fallbackTips;
-      res.json({ tips });
+      res.json({ tips, source: "gemini" });
     } catch (error) {
-      res.json({ tips: fallbackTips });
+      res.json({ tips: fallbackTips, source: "fallback" });
     }
   });
 
   app.post("/api/ai/cv", async (req, res) => {
     const { user, projects, language, resumeData } = getResumeInput(req.body);
     const ai = getAiClient();
-    if (!ai) return res.json({ cv: buildFallbackCv(user, projects, language) });
+    if (!ai) return res.json({ cv: buildFallbackCv(user, projects, language), source: "fallback" });
 
     try {
       const response = await ai.models.generateContent({
@@ -215,9 +219,9 @@ async function startServer() {
         `,
       });
 
-      res.json({ cv: response.text || buildFallbackCv(user, projects, language) });
+      res.json({ cv: response.text || buildFallbackCv(user, projects, language), source: response.text ? "gemini" : "fallback" });
     } catch (error) {
-      res.json({ cv: buildFallbackCv(user, projects, language) });
+      res.json({ cv: buildFallbackCv(user, projects, language), source: "fallback" });
     }
   });
 
@@ -231,7 +235,7 @@ async function startServer() {
       return res.status(400).json({ error: "Job description is required" });
     }
 
-    if (!ai) return res.json({ cv: fallback });
+    if (!ai) return res.json({ cv: fallback, source: "fallback" });
 
     try {
       const response = await ai.models.generateContent({
@@ -255,9 +259,9 @@ async function startServer() {
         `,
       });
 
-      res.json({ cv: response.text || fallback });
+      res.json({ cv: response.text || fallback, source: response.text ? "gemini" : "fallback" });
     } catch (error) {
-      res.json({ cv: fallback });
+      res.json({ cv: fallback, source: "fallback" });
     }
   });
 
