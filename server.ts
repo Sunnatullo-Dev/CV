@@ -192,6 +192,7 @@ async function startServer() {
 
   app.post("/api/ai/cv", async (req, res) => {
     const { user, projects, language, resumeData } = getResumeInput(req.body);
+    const templateId = String(req.body.templateId || "minimalist");
     const ai = getAiClient();
     if (!ai) return res.json({ cv: buildFallbackCv(user, projects, language), source: "fallback" });
 
@@ -211,6 +212,7 @@ async function startServer() {
 
           Muhim qoida: mavjud bo'lmagan faktlarni, real ish joylarini yoki universitetlarni o'ylab topma.
           Ma'lumot yo'q joyda neutral professional wording ishlat.
+          Tanlangan shablon: ${templateId}. CV ohangi va bo'lim urg'ulari shu shablonga mos bo'lsin.
 
           Structured resume data JSON:
           ${JSON.stringify(resumeData, null, 2)}

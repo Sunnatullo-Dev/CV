@@ -117,7 +117,9 @@ export const PortfolioWizard = ({
   const [cvCopyState, setCvCopyState] = useState<'idle' | 'copied'>('idle');
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [linkCopyState, setLinkCopyState] = useState<'idle' | 'copied'>('idle');
-  const [activeAiTab, setActiveAiTab] = useState<'tips' | 'cv' | 'tailor'>('tips');
+  const [activeAiTab, setActiveAiTab] = useState<'setup' | 'tips' | 'cv' | 'tailor'>('tips');
+  const [aiSetupConfirmed, setAiSetupConfirmed] = useState(false);
+  const [aiSetupImageError, setAiSetupImageError] = useState<string | null>(null);
   const [jobDescription, setJobDescription] = useState('');
   const [tailoredCvContent, setTailoredCvContent] = useState<string | null>(null);
   const [isTailoringCv, setIsTailoringCv] = useState(false);
@@ -127,7 +129,7 @@ export const PortfolioWizard = ({
   useEffect(() => {
     setShowAiModal(isAiModalOpen);
     if (isAiModalOpen) {
-      setActiveAiTab('cv');
+      setActiveAiTab('setup');
     }
   }, [isAiModalOpen]);
 
@@ -144,7 +146,7 @@ export const PortfolioWizard = ({
   const fetchAiCV = async () => {
     setIsGeneratingCv(true);
     try {
-      const cv = await generateAiCV(user, projects, language);
+      const cv = await generateAiCV(user, projects, language, selectedTemplate);
       setCvContent(cv);
     } catch (err) {
       console.error(err);
@@ -154,9 +156,64 @@ export const PortfolioWizard = ({
   };
 
   useEffect(() => {
-    if (!showAiModal || activeAiTab !== 'cv' || cvContent || isGeneratingCv) return;
+    if (!showAiModal || activeAiTab !== 'cv' || !aiSetupConfirmed || cvContent || isGeneratingCv) return;
     fetchAiCV();
-  }, [activeAiTab, cvContent, isGeneratingCv, showAiModal]);
+  }, [activeAiTab, aiSetupConfirmed, cvContent, isGeneratingCv, showAiModal]);
+
+  const validateAiSetup = () => {
+    const errors: FieldErrors = {};
+
+    if (user.fullName.trim().length < 3) {
+      errors.fullName = "AI CV uchun ism-familiyangizni kiriting.";
+    }
+
+    if (user.bio.trim().length < 40) {
+      errors.bio = "AI CV uchun o'zingiz haqingizda kamida 40 ta belgi yozing.";
+    }
+
+    if (!user.experienceSummary?.trim() || user.experienceSummary.trim().length < 40) {
+      errors.experienceSummary = "AI CV uchun tajribangizni kamida 40 ta belgi bilan yozing.";
+    }
+
+    if (!selectedTemplate) {
+      errors.template = "AI CV uchun professional shablon tanlang.";
+    }
+
+    setFieldErrors(errors);
+
+    if (hasErrors(errors)) {
+      setError(getFirstError(errors));
+      return false;
+    }
+
+    return true;
+  };
+
+  const startAiCvFromSetup = () => {
+    setError(null);
+    if (!validateAiSetup()) return;
+    setAiSetupConfirmed(true);
+    setCvContent(null);
+    setActiveAiTab('cv');
+  };
+
+  const handleAiAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      setAiSetupImageError("Rasm 2MB dan kichik bo'lishi kerak.");
+      return;
+    }
+
+    setAiSetupImageError(null);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      setUser((prev) => ({ ...prev, avatarUrl: base64 }));
+    };
+    reader.readAsDataURL(file);
+  };
 
   const fetchAiTips = async () => {
     if (projects.length === 0) return;
@@ -352,8 +409,7 @@ export const PortfolioWizard = ({
                   onOpenResume={onOpenResume}
                   onOpenAi={() => {
                     setShowAiModal(true);
-                    setActiveAiTab('cv');
-                    if (!cvContent) fetchAiCV();
+                    setActiveAiTab('setup');
                   }}
                   onCopyLink={async () => {
                     const url = publishedUrl || `https://devport.uz/${user.githubUsername || "username"}`;
@@ -392,8 +448,7 @@ export const PortfolioWizard = ({
               variant="outline"
               onClick={() => {
                 setShowAiModal(true);
-                setActiveAiTab('cv');
-                if (!cvContent) fetchAiCV();
+                setActiveAiTab('setup');
               }}
               className="flex-1 h-12 rounded-2xl border-indigo-100 text-indigo-600 hover:bg-indigo-50 transition-all font-semibold"
             >
@@ -476,7 +531,16 @@ export const PortfolioWizard = ({
                   </button>
                 </div>
 
-                <div className="flex gap-2 relative z-10">
+                <div className="relative z-10 flex flex-wrap gap-2">
+                  <button 
+                    onClick={() => setActiveAiTab('setup')}
+                    className={cn(
+                      "px-4 py-2 rounded-md text-xs font-bold uppercase tracking-widest transition-all",
+                      activeAiTab === 'setup' ? "bg-white text-slate-950 shadow-lg" : "hover:bg-white/10 text-slate-200"
+                    )}
+                  >
+                    CV Setup
+                  </button>
                   <button 
                     onClick={() => setActiveAiTab('tips')}
                     className={cn(
@@ -488,8 +552,11 @@ export const PortfolioWizard = ({
                   </button>
                   <button 
                     onClick={() => {
+                      if (!aiSetupConfirmed) {
+                        setActiveAiTab('setup');
+                        return;
+                      }
                       setActiveAiTab('cv');
-                      if (!cvContent) fetchAiCV();
                     }}
                     className={cn(
                       "px-4 py-2 rounded-md text-xs font-bold uppercase tracking-widest transition-all",
@@ -511,7 +578,138 @@ export const PortfolioWizard = ({
               </div>
 
               <div className="p-8 md:p-12 min-h-[450px] bg-slate-50/30 overflow-y-auto max-h-[60vh] custom-scrollbar">
-                {activeAiTab === 'tips' ? (
+                {activeAiTab === 'setup' ? (
+                  <div className="space-y-6">
+                    <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-5">
+                      <div className="flex items-start gap-4">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-indigo-600 shadow-sm">
+                          <FileUser size={20} />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-black text-slate-950">AI CV uchun ma'lumotlar</h3>
+                          <p className="mt-1 text-sm leading-6 text-indigo-900/75">
+                            AI CV yaratishdan oldin ism-familiya, rasm, tajriba va shablonni tasdiqlang. Keyin Gemini tayyor variantni avtomatik chiqaradi.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-5 md:grid-cols-[auto_1fr]">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-3xl border-4 border-white bg-indigo-100 shadow-xl">
+                          {user.avatarUrl ? (
+                            <img src={user.avatarUrl} alt="Avatar" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <FileUser size={38} className="text-indigo-400" />
+                          )}
+                        </div>
+                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-700 shadow-sm hover:bg-slate-50">
+                          <input type="file" className="hidden" accept="image/*" onChange={handleAiAvatarUpload} />
+                          <Download size={13} className="rotate-180" />
+                          Rasm
+                        </label>
+                        {aiSetupImageError && <FieldError>{aiSetupImageError}</FieldError>}
+                      </div>
+
+                      <div className="space-y-4">
+                        <ProjectField label="Ism-familiya" error={fieldErrors.fullName}>
+                          <input
+                            value={user.fullName}
+                            onChange={(event) => {
+                              setAiSetupConfirmed(false);
+                              clearFieldError("fullName");
+                              setUser((prev) => ({ ...prev, fullName: event.target.value }));
+                            }}
+                            placeholder="Ism Familiya"
+                            className={cn(
+                              "h-12 w-full rounded-xl border bg-white px-4 text-sm font-semibold text-slate-800 outline-none focus:ring-4",
+                              fieldErrors.fullName ? "border-red-300 focus:border-red-500 focus:ring-red-50" : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-50"
+                            )}
+                          />
+                        </ProjectField>
+
+                        <ProjectField label="O'zingiz haqingizda" error={fieldErrors.bio}>
+                          <textarea
+                            value={user.bio}
+                            onChange={(event) => {
+                              setAiSetupConfirmed(false);
+                              clearFieldError("bio");
+                              setUser((prev) => ({ ...prev, bio: event.target.value }));
+                            }}
+                            placeholder="Qaysi sohada ishlaysiz, kuchli tomonlaringiz va maqsadingiz..."
+                            className={cn(
+                              "min-h-[95px] w-full rounded-xl border bg-white p-4 text-sm font-medium leading-6 text-slate-800 outline-none focus:ring-4",
+                              fieldErrors.bio ? "border-red-300 focus:border-red-500 focus:ring-red-50" : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-50"
+                            )}
+                          />
+                        </ProjectField>
+
+                        <ProjectField label="Tajriba va yutuqlar" error={fieldErrors.experienceSummary}>
+                          <textarea
+                            value={user.experienceSummary || ""}
+                            onChange={(event) => {
+                              setAiSetupConfirmed(false);
+                              clearFieldError("experienceSummary");
+                              setUser((prev) => ({ ...prev, experienceSummary: event.target.value }));
+                            }}
+                            placeholder="Masalan: 2 yil React/Node.js bilan ishladim, CRM va dashboardlar qurdim, jarayonlarni avtomatlashtirdim..."
+                            className={cn(
+                              "min-h-[120px] w-full rounded-xl border bg-white p-4 text-sm font-medium leading-6 text-slate-800 outline-none focus:ring-4",
+                              fieldErrors.experienceSummary ? "border-red-300 focus:border-red-500 focus:ring-red-50" : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-50"
+                            )}
+                          />
+                        </ProjectField>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Majburiy shablon tanlash</p>
+                          <p className="mt-1 text-xs text-slate-500">AI CV shu professional yo'nalishga mos ohangda tayyorlanadi.</p>
+                        </div>
+                        {fieldErrors.template && <FieldError>{fieldErrors.template}</FieldError>}
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {PROFESSIONAL_TEMPLATES.slice(0, 6).map((template) => {
+                          const Icon = template.icon;
+                          const isSelected = selectedTemplate === template.id;
+
+                          return (
+                            <button
+                              key={template.id}
+                              onClick={() => {
+                                setAiSetupConfirmed(false);
+                                clearFieldError("template");
+                                setSelectedTemplate(template.id);
+                              }}
+                              className={cn(
+                                "flex items-start gap-3 rounded-xl border p-3 text-left transition",
+                                isSelected ? "border-slate-950 bg-slate-950 text-white shadow-sm" : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                              )}
+                            >
+                              <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border", isSelected ? "border-white/15 bg-white/10" : "border-slate-200 bg-slate-50")}>
+                                <Icon size={17} />
+                              </span>
+                              <span className="min-w-0">
+                                <span className="block text-sm font-black">{template.name}</span>
+                                <span className={cn("mt-1 block text-xs leading-5", isSelected ? "text-slate-300" : "text-slate-500")}>{template.audience}</span>
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={startAiCvFromSetup}
+                      className="h-12 w-full rounded-2xl bg-slate-950 text-sm font-black text-white hover:bg-slate-800"
+                    >
+                      <Sparkles className="mr-2" size={18} />
+                      Ma'lumotlarni tasdiqlash va AI CV yaratish
+                    </Button>
+                  </div>
+                ) : activeAiTab === 'tips' ? (
                   isGeneratingTips ? (
                     <div className="py-20 flex flex-col items-center text-center">
                       <div className="relative mb-6">
@@ -594,8 +792,8 @@ export const PortfolioWizard = ({
                       </motion.div>
                     ) : (
                       <div className="py-20 text-center">
-                        <Button onClick={fetchAiCV} variant="primary" className="rounded-full">
-                          AI CV Yaratishni boshlash
+                        <Button onClick={() => aiSetupConfirmed ? fetchAiCV() : setActiveAiTab('setup')} variant="primary" className="rounded-full">
+                          {aiSetupConfirmed ? "AI CV Yaratishni boshlash" : "Avval ma'lumotlarni to'ldirish"}
                         </Button>
                       </div>
                     )}

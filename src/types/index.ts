@@ -4,6 +4,7 @@ export interface User {
   id: string;
   fullName: string;
   bio: string;
+  experienceSummary?: string;
   avatarUrl?: string;
   githubUsername: string;
   socialLinks?: {

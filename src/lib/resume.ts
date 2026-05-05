@@ -44,6 +44,8 @@ export const buildResumeData = (
   ].filter(Boolean) as string[];
 
   const skills = Array.from(new Set(projects.flatMap((project) => project.tags))).filter(Boolean);
+  const manualExperience = user.experienceSummary?.trim();
+  const projectExperienceLimit = manualExperience ? 3 : 4;
 
   return {
     language,
@@ -51,13 +53,22 @@ export const buildResumeData = (
     contactLinks,
     summary: user.bio?.trim() || FALLBACK_SUMMARY[language],
     skills: skills.length ? skills : ['React', 'TypeScript', 'API Integration', 'Product Thinking'],
-    experience: projects.slice(0, 4).map((project) => ({
-      company: project.title,
-      role: project.role || FALLBACK_HEADLINE[language],
-      startDate: 'Project',
-      endDate: 'Present',
-      description: [project.description, project.impact].filter(Boolean).join(' '),
-    })),
+    experience: [
+      ...(manualExperience ? [{
+        company: 'Professional Experience',
+        role: FALLBACK_HEADLINE[language],
+        startDate: 'Experience',
+        endDate: 'Present',
+        description: manualExperience,
+      }] : []),
+      ...projects.slice(0, projectExperienceLimit).map((project) => ({
+        company: project.title,
+        role: project.role || FALLBACK_HEADLINE[language],
+        startDate: 'Project',
+        endDate: 'Present',
+        description: [project.description, project.impact].filter(Boolean).join(' '),
+      })),
+    ],
     education: [
       {
         institution: FALLBACK_EDUCATION[language],

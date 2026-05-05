@@ -102,11 +102,12 @@ export const generateAiCV = async (
   user: User,
   projects: Project[],
   language: AppLanguage = "uz",
+  templateId = "minimalist",
 ) => {
   try {
     const visibleProjects = projects.filter((project) => project.isPublic !== false);
     const resumeData = buildResumeData(user, visibleProjects, language);
-    const response = await axios.post("/api/ai/cv", { user, projects: visibleProjects, language, resumeData });
+    const response = await axios.post("/api/ai/cv", { user, projects: visibleProjects, language, resumeData, templateId });
     return response.data?.cv || generateFallbackCv(user, visibleProjects, language);
   } catch (error) {
     console.error("CV AI Error:", error);

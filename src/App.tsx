@@ -43,6 +43,7 @@ const DEFAULT_USER: User = {
   id: '1',
   fullName: 'Samandarov Sunnatulla',
   bio: "Full-stack Developer va Senior Solution Architect. Murakkab biznes jarayonlarini tez, ishonchli va oson kengayadigan raqamli mahsulotlarga aylantirishga ixtisoslashganman.",
+  experienceSummary: '',
   githubUsername: '',
   socialLinks: {
     linkedin: '',
