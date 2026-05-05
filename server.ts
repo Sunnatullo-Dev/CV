@@ -4,6 +4,9 @@ import path from "path";
 import axios from "axios";
 import crypto from "crypto";
 import fs from "fs/promises";
+import { GoogleGenAI } from "@google/genai";
+import { buildResumeData } from "./src/lib/resume";
+import type { AppLanguage, Project, ResumeData, User } from "./src/types";
 
 const DATA_DIR = path.join(process.cwd(), ".data");
 const PORTFOLIOS_FILE = path.join(DATA_DIR, "portfolios.json");
@@ -47,6 +50,48 @@ const createSlug = (value: string) => (
     .replace(/^-+|-+$/g, "")
     .slice(0, 64)
 );
+
+const AI_MODEL = "gemini-3-flash-preview";
+
+const CV_LANGUAGE_NAMES: Record<AppLanguage, string> = {
+  uz: "o'zbek",
+  en: "English",
+  ru: "Russian",
+};
+
+const normalizeLanguage = (value: unknown): AppLanguage => (
+  value === "en" || value === "ru" || value === "uz" ? value : "uz"
+);
+
+const getAiClient = () => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  return apiKey ? new GoogleGenAI({ apiKey }) : null;
+};
+
+const fallbackTips = [
+  "Bio matnini natijaga yo'naltiring: tajriba, kuchli soha va biznes qiymatini bir jumlada ayting.",
+  "Har bir loyiha uchun muammo, yechim va natijani alohida yozing. Bu rekruterga ish hajmini tez tushuntiradi.",
+  "GitHub, LinkedIn va shaxsiy sayt linklarini to'ldiring. Ishonch signallari portfolio konversiyasini oshiradi.",
+];
+
+const buildFallbackCv = (user: User, projects: Project[], language: AppLanguage) => {
+  const resume = buildResumeData(user, projects, language);
+  const projectLines = resume.projects.length
+    ? resume.projects.slice(0, 5).map((project) => (
+      `### ${project.title}\n- ${project.role ? `${project.role}: ` : ""}${project.description}\n${project.impact ? `- Impact: ${project.impact}\n` : ""}- Tech stack: ${project.tags.join(", ") || "Open Source"}\n- Link: ${project.url || project.repoUrl || "portfolio orqali ko'rsatiladi"}`
+    )).join("\n\n")
+    : "- GitHub loyihalari import qilingandan keyin bu bo'lim real case studylar bilan to'ldiriladi.";
+
+  return `# ${user.fullName || "Professional Developer"}\n${resume.headline}\n\n${resume.contactLinks.join(" | ") || "GitHub / LinkedIn / Website"}\n\n## Professional Summary\n${resume.summary}\n\n## Core Skills\n${resume.skills.map((skill) => `- ${skill}`).join("\n")}\n\n## Professional Experience\n${resume.experience.map((item) => `### ${item.role} - ${item.company}\n- ${item.description}`).join("\n\n") || "- Project experience will appear after GitHub import."}\n\n## Selected Projects\n${projectLines}\n\n## Education\n${resume.education.map((item) => `- ${item.degree}, ${item.institution} (${item.gradYear})`).join("\n")}\n\n## Languages\n${resume.languages.map((item) => `- ${item}`).join("\n")}`;
+};
+
+const getResumeInput = (body: Record<string, unknown>) => {
+  const user = (body.user || {}) as User;
+  const projects = Array.isArray(body.projects) ? body.projects as Project[] : [];
+  const language = normalizeLanguage(body.language);
+  const resumeData = (body.resumeData || buildResumeData(user, projects, language)) as ResumeData;
+  return { user, projects, language, resumeData };
+};
 
 // Telegram InitData Verification
 function verifyTelegramInitData(initData: string): boolean {
@@ -108,6 +153,111 @@ async function startServer() {
       res.json(response.data);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch GitHub repos" });
+    }
+  });
+
+  app.post("/api/ai/recommendations", async (req, res) => {
+    const { user, projects, language } = getResumeInput(req.body);
+    const ai = getAiClient();
+    if (!ai) return res.json({ tips: fallbackTips });
+
+    try {
+      const response = await ai.models.generateContent({
+        model: AI_MODEL,
+        contents: `
+          Sen professional portfolio maslahatchisisan. Quyidagi foydalanuvchi ma'lumotlari va loyihalarini tahlil qilib,
+          unga portfoliosini yaxshilash uchun 3 ta aniq va qisqa maslahat ber.
+          Javobni faqat JSON formatida qaytar, massiv ko'rinishida: ["maslahat1", "maslahat2", "maslahat3"].
+
+          Foydalanuvchi: ${user.fullName}
+          Bio: ${user.bio}
+          Loyihalar: ${projects.map((project) => `${project.title}: ${project.description}; role: ${project.role || "unknown"}; impact: ${project.impact || "unknown"}; texnologiyalar: ${project.tags.join(", ")}`).join("; ")}
+
+          Maslahatlar ${CV_LANGUAGE_NAMES[language]} tilida bo'lsin.
+        `,
+      });
+
+      const text = response.text || "";
+      const jsonMatch = text.match(/\[.*\]/s);
+      const tips = jsonMatch ? JSON.parse(jsonMatch[0]) : fallbackTips;
+      res.json({ tips });
+    } catch (error) {
+      res.json({ tips: fallbackTips });
+    }
+  });
+
+  app.post("/api/ai/cv", async (req, res) => {
+    const { user, projects, language, resumeData } = getResumeInput(req.body);
+    const ai = getAiClient();
+    if (!ai) return res.json({ cv: buildFallbackCv(user, projects, language) });
+
+    try {
+      const response = await ai.models.generateContent({
+        model: AI_MODEL,
+        contents: `
+          Sen professional HR va ATS CV mutaxassisisan. Quyidagi structured resume data asosida professional CV yarat.
+          CV Markdown formatida bo'lsin va aynan shu tartibdagi bo'limlarni o'z ichiga olsin:
+          1. Sarlavha: ism-sharif, headline va aloqa linklari. Har bir link Markdown clickable formatda bo'lsin.
+          2. Professional Summary: 3-4 qatordan oshmasin, kuchli va aniq bo'lsin.
+          3. Core Skills: texnologiyalarni mantiqiy guruhlarga ajrat.
+          4. Professional Experience: project role va impactdan foydalan. Kompaniya yoki ish joyini o'ylab topma.
+          5. Selected Projects: har bir project uchun muammo, yechim va natija uslubida 2-3 bullet yoz.
+          6. Education.
+          7. Languages.
+
+          Muhim qoida: mavjud bo'lmagan faktlarni, real ish joylarini yoki universitetlarni o'ylab topma.
+          Ma'lumot yo'q joyda neutral professional wording ishlat.
+
+          Structured resume data JSON:
+          ${JSON.stringify(resumeData, null, 2)}
+
+          CV ${CV_LANGUAGE_NAMES[language]} tilida, Markdown formatida, aniq, rekruterga tayyor va natijaga yo'naltirilgan professional uslubda bo'lsin.
+        `,
+      });
+
+      res.json({ cv: response.text || buildFallbackCv(user, projects, language) });
+    } catch (error) {
+      res.json({ cv: buildFallbackCv(user, projects, language) });
+    }
+  });
+
+  app.post("/api/ai/tailor", async (req, res) => {
+    const { user, projects, language, resumeData } = getResumeInput(req.body);
+    const jobDescription = String(req.body.jobDescription || "").trim();
+    const fallback = `${buildFallbackCv(user, projects, language)}\n\n## Target role alignment\n- Vakansiya matnidagi asosiy talablarni summary, skills va project bulletlarda real dalillar bilan kuchaytiring.\n- Mavjud bo'lmagan tajriba yoki kompaniya nomlarini qo'shmang.`;
+    const ai = getAiClient();
+
+    if (!jobDescription) {
+      return res.status(400).json({ error: "Job description is required" });
+    }
+
+    if (!ai) return res.json({ cv: fallback });
+
+    try {
+      const response = await ai.models.generateContent({
+        model: AI_MODEL,
+        contents: `
+          Sen senior recruiter va ATS optimization mutaxassisisan. Quyidagi CV data va vakansiya matni asosida CV'ni aynan shu ishga moslab qayta yoz.
+
+          Qoidalar:
+          - CV Markdown formatida bo'lsin.
+          - Mavjud bo'lmagan fakt, kompaniya, yil yoki sertifikat o'ylab topma.
+          - Vakansiyadagi keywordlarni tabiiy joylashtir.
+          - Summary, Core Skills va Selected Projects bo'limlarini vakansiyaga mos kuchaytir.
+          - Har bir loyiha bulletida muammo, yechim va impact ko'rinsin.
+          - CV ${CV_LANGUAGE_NAMES[language]} tilida bo'lsin.
+
+          Structured resume data JSON:
+          ${JSON.stringify(resumeData, null, 2)}
+
+          Vakansiya matni:
+          ${jobDescription}
+        `,
+      });
+
+      res.json({ cv: response.text || fallback });
+    } catch (error) {
+      res.json({ cv: fallback });
     }
   });
 

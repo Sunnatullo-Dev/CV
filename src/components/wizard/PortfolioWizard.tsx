@@ -5,7 +5,7 @@ import { ChevronRight, ChevronLeft, Github, Layout, CheckCircle, FileText, Loade
 import axios from "axios";
 import { cn } from "../../lib/utils";
 import { AppLanguage, User, Project } from "../../types";
-import { getPortfolioRecommendations, generateAiCV } from "../../services/aiService";
+import { getPortfolioRecommendations, generateAiCV, tailorCvForJob } from "../../services/aiService";
 import Markdown from "react-markdown";
 
 const STEPS = [
@@ -117,7 +117,11 @@ export const PortfolioWizard = ({
   const [cvCopyState, setCvCopyState] = useState<'idle' | 'copied'>('idle');
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [linkCopyState, setLinkCopyState] = useState<'idle' | 'copied'>('idle');
-  const [activeAiTab, setActiveAiTab] = useState<'tips' | 'cv'>('tips');
+  const [activeAiTab, setActiveAiTab] = useState<'tips' | 'cv' | 'tailor'>('tips');
+  const [jobDescription, setJobDescription] = useState('');
+  const [tailoredCvContent, setTailoredCvContent] = useState<string | null>(null);
+  const [isTailoringCv, setIsTailoringCv] = useState(false);
+  const [tailoredCopyState, setTailoredCopyState] = useState<'idle' | 'copied'>('idle');
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   useEffect(() => {
@@ -159,6 +163,24 @@ export const PortfolioWizard = ({
       console.error(err);
     } finally {
       setIsGeneratingTips(false);
+    }
+  };
+
+  const fetchTailoredCv = async () => {
+    if (!jobDescription.trim()) {
+      setError("Vakansiya matnini kiriting.");
+      return;
+    }
+
+    setError(null);
+    setIsTailoringCv(true);
+    try {
+      const cv = await tailorCvForJob(user, projects, language, jobDescription);
+      setTailoredCvContent(cv);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsTailoringCv(false);
     }
   };
 
@@ -471,6 +493,15 @@ export const PortfolioWizard = ({
                   >
                     AI CV Yaratish
                   </button>
+                  <button 
+                    onClick={() => setActiveAiTab('tailor')}
+                    className={cn(
+                      "px-4 py-2 rounded-md text-xs font-bold uppercase tracking-widest transition-all",
+                      activeAiTab === 'tailor' ? "bg-white text-slate-950 shadow-lg" : "hover:bg-white/10 text-slate-200"
+                    )}
+                  >
+                    Job match
+                  </button>
                 </div>
               </div>
 
@@ -511,7 +542,7 @@ export const PortfolioWizard = ({
                       </div>
                     </div>
                   )
-                ) : (
+                ) : activeAiTab === 'cv' ? (
                   <div className="space-y-6">
                     {isGeneratingCv ? (
                       <div className="py-20 flex flex-col items-center text-center">
@@ -562,6 +593,56 @@ export const PortfolioWizard = ({
                           AI CV Yaratishni boshlash
                         </Button>
                       </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1 h-4 bg-blue-500 rounded-full" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Vakansiyaga mos CV</span>
+                      </div>
+                      <textarea
+                        value={jobDescription}
+                        onChange={(event) => setJobDescription(event.target.value)}
+                        placeholder="Vakansiya matnini shu yerga qo'ying: talablar, texnologiyalar, rol va mas'uliyatlar..."
+                        className="min-h-[170px] w-full rounded-2xl border border-slate-200 bg-white p-5 text-sm font-medium leading-6 text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50"
+                      />
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-xs leading-5 text-slate-500">
+                          AI faqat mavjud tajriba va projectlarga tayanib, CV'ni shu role uchun kuchaytiradi.
+                        </p>
+                        <Button
+                          onClick={fetchTailoredCv}
+                          disabled={isTailoringCv || jobDescription.trim().length < 20}
+                          className="h-10 rounded-xl bg-slate-950 px-4 text-xs font-bold text-white hover:bg-slate-800"
+                        >
+                          {isTailoringCv ? <Loader2 className="mr-2 animate-spin" size={15} /> : <Sparkles className="mr-2" size={15} />}
+                          Moslashtirish
+                        </Button>
+                      </div>
+                    </div>
+
+                    {tailoredCvContent && (
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Job-specific ATS CV</span>
+                          <button
+                            onClick={async () => {
+                              await navigator.clipboard.writeText(tailoredCvContent);
+                              setTailoredCopyState('copied');
+                              window.setTimeout(() => setTailoredCopyState('idle'), 1800);
+                            }}
+                            className="flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5 text-[10px] font-bold uppercase transition-colors hover:bg-slate-200"
+                          >
+                            <Copy size={12} />
+                            {tailoredCopyState === 'copied' ? 'Nusxalandi' : 'Nusxalash'}
+                          </button>
+                        </div>
+                        <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm prose prose-sm max-w-none text-slate-700">
+                          <Markdown>{tailoredCvContent}</Markdown>
+                        </div>
+                      </motion.div>
                     )}
                   </div>
                 )}
