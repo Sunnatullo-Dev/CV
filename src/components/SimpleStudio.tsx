@@ -448,13 +448,23 @@ export const SimpleStudio = ({
           <p className="text-xs font-bold uppercase tracking-widest text-slate-400">{copy.eyebrow}</p>
           <h1 className="mt-2 text-2xl font-black tracking-normal text-slate-950 sm:text-3xl">{copy.title}</h1>
         </div>
-        <button
-          onClick={onResetWorkspace}
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-slate-950"
-        >
-          <RotateCcw size={16} />
-          {copy.reset}
-        </button>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <button
+            onClick={generateCv}
+            disabled={isGeneratingCv}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-60"
+          >
+            {isGeneratingCv ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+            {copy.actions.generateAiCv}
+          </button>
+          <button
+            onClick={onResetWorkspace}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-slate-950"
+          >
+            <RotateCcw size={16} />
+            {copy.reset}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-2 rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
