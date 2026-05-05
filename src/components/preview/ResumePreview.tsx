@@ -5,6 +5,7 @@ import {
   ClipboardCheck,
   Download,
   ExternalLink,
+  FileDown,
   FileJson,
   FileText,
   Gauge,
@@ -19,7 +20,7 @@ import { buildResumeData, LANGUAGE_NAMES } from '../../lib/resume';
 import { cn } from '../../lib/utils';
 import { Button } from '../shared/Button';
 import { analyzeResume } from '../../lib/ats';
-import { buildResumeMarkdown, downloadBlob, downloadResumePdf, getResumeFileBaseName } from '../../lib/export';
+import { buildResumeMarkdown, downloadBlob, downloadResumeDocx, downloadResumePdf, getResumeFileBaseName } from '../../lib/export';
 
 type CvTemplateId = 'ats-classic' | 'modern-sidebar' | 'timeline-pro' | 'executive-compact';
 
@@ -35,6 +36,7 @@ const COPY = {
     subtitle: "Rekruter, ATS va professional taqdimot uchun tayyor CV ko'rinishlari.",
     print: 'PDF / Chop etish',
     pdf: 'PDF yuklash',
+    docx: 'DOCX yuklash',
     markdown: 'Markdown',
     json: 'JSON',
     copyCv: 'CV nusxalash',
@@ -60,6 +62,7 @@ const COPY = {
     subtitle: 'Resume layouts prepared for recruiters, ATS, and polished presentation.',
     print: 'PDF / Print',
     pdf: 'Download PDF',
+    docx: 'Download DOCX',
     markdown: 'Markdown',
     json: 'JSON',
     copyCv: 'Copy CV',
@@ -85,6 +88,7 @@ const COPY = {
     subtitle: 'Макеты CV, подготовленные для рекрутеров, ATS и профессиональной презентации.',
     print: 'PDF / Печать',
     pdf: 'Скачать PDF',
+    docx: 'Скачать DOCX',
     markdown: 'Markdown',
     json: 'JSON',
     copyCv: 'Копировать CV',
@@ -152,7 +156,7 @@ const TEMPLATE_COPY: Record<AppLanguage, Record<CvTemplateId, { name: string; au
 
 export const ResumePreview = ({ user, projects, language }: ResumePreviewProps) => {
   const [templateId, setTemplateId] = useState<CvTemplateId>('modern-sidebar');
-  const [exportState, setExportState] = useState<'idle' | 'pdf' | 'copied'>('idle');
+  const [exportState, setExportState] = useState<'idle' | 'pdf' | 'docx' | 'copied'>('idle');
   const visibleProjects = projects.filter((project) => project.isPublic !== false);
   const resume = buildResumeData(user, visibleProjects, language);
   const copy = COPY[language];
@@ -174,6 +178,15 @@ export const ResumePreview = ({ user, projects, language }: ResumePreviewProps) 
 
   const handleDownloadMarkdown = () => {
     downloadBlob(markdown, `${fileBaseName}.md`, 'text/markdown;charset=utf-8');
+  };
+
+  const handleDownloadDocx = () => {
+    setExportState('docx');
+    try {
+      downloadResumeDocx(user, resume, language);
+    } finally {
+      window.setTimeout(() => setExportState('idle'), 300);
+    }
   };
 
   const handleDownloadJson = () => {
@@ -198,6 +211,10 @@ export const ResumePreview = ({ user, projects, language }: ResumePreviewProps) 
             <Button onClick={handleDownloadPdf} disabled={exportState === 'pdf'} className="h-11 rounded-lg bg-slate-950 px-3 text-xs font-semibold text-white hover:bg-slate-800 sm:px-4 sm:text-sm">
               {exportState === 'pdf' ? <Loader2 className="mr-2 animate-spin" size={16} /> : <Download className="mr-2" size={16} />}
               {copy.pdf}
+            </Button>
+            <Button variant="outline" onClick={handleDownloadDocx} disabled={exportState === 'docx'} className="h-11 rounded-lg border-slate-200 px-3 text-xs font-semibold text-slate-700 hover:bg-white sm:px-4 sm:text-sm">
+              {exportState === 'docx' ? <Loader2 className="mr-2 animate-spin" size={15} /> : <FileDown className="mr-2" size={15} />}
+              {copy.docx}
             </Button>
             <Button variant="outline" onClick={handleDownloadMarkdown} className="h-11 rounded-lg border-slate-200 px-3 text-xs font-semibold text-slate-700 hover:bg-white sm:px-4 sm:text-sm">
               <FileText className="mr-2" size={15} />

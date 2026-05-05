@@ -17,11 +17,12 @@ import {
   Trash2,
   Upload,
   UserRound,
+  X,
 } from "lucide-react";
 import axios from "axios";
 import { AppLanguage, Project, User } from "../types";
 import { cn } from "../lib/utils";
-import { generateAiCV } from "../services/aiService";
+import { AiProfileAnswers, improveProfileWithAI, generateAiCV } from "../services/aiService";
 import { getAppCopy } from "../lib/i18n";
 
 type StudioStep = "profile" | "template" | "ready";
@@ -100,6 +101,15 @@ const emptyProjectDraft = {
   repoUrl: "",
 };
 
+const emptyAiDraft: AiProfileAnswers = {
+  role: "",
+  experience: "",
+  skills: "",
+  goal: "",
+  targetRole: "",
+  project: "",
+};
+
 const normalizeGithubUsername = (value: string) => value.trim().replace(/^@/, "");
 const githubUsernamePattern = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/;
 
@@ -127,6 +137,9 @@ export const SimpleStudio = ({
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState("");
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
+  const [showAiOnboarding, setShowAiOnboarding] = useState(false);
+  const [aiDraft, setAiDraft] = useState<AiProfileAnswers>(emptyAiDraft);
+  const [isImprovingProfile, setIsImprovingProfile] = useState(false);
 
   const visibleProjects = useMemo(
     () => projects.filter((project) => project.isPublic !== false).sort((a, b) => a.order - b.order),
@@ -181,6 +194,53 @@ export const SimpleStudio = ({
   const updateDraft = (field: keyof typeof emptyProjectDraft, value: string) => {
     setNotice(null);
     setProjectDraft((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const updateAiDraft = (field: keyof AiProfileAnswers, value: string) => {
+    setNotice(null);
+    setAiDraft((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const applyAiOnboarding = async () => {
+    const hasSignal = Object.values(aiDraft).some((value) => value.trim().length > 0);
+    if (!hasSignal) {
+      setNotice({ type: "error", text: copy.aiOnboarding.emptyError });
+      return;
+    }
+
+    setIsImprovingProfile(true);
+    setNotice(null);
+
+    try {
+      const profile = await improveProfileWithAI(aiDraft, user, visibleProjects, language);
+      setUser((prev) => ({
+        ...prev,
+        bio: profile.bio || prev.bio,
+        experienceSummary: profile.experienceSummary || prev.experienceSummary,
+      }));
+
+      if (profile.projectTitle && profile.projectDescription && visibleProjects.length === 0) {
+        const nextProject: Project = {
+          id: `ai-${Date.now()}`,
+          userId: user.id || "1",
+          title: profile.projectTitle,
+          description: profile.projectDescription,
+          impact: profile.projectImpact || "",
+          role: profile.projectRole || aiDraft.targetRole || aiDraft.role || "Developer",
+          tags: profile.tags?.length ? profile.tags : ["React", "TypeScript"],
+          isPublic: true,
+          order: projects.length,
+        };
+        onProjectsSynced(normalizeProjectOrder([...projects, nextProject]));
+      }
+
+      setShowAiOnboarding(false);
+      setNotice({ type: "success", text: copy.aiOnboarding.success });
+    } catch {
+      setNotice({ type: "error", text: copy.notices.aiError });
+    } finally {
+      setIsImprovingProfile(false);
+    }
   };
 
   const addManualProject = () => {
@@ -390,6 +450,19 @@ export const SimpleStudio = ({
       {step === "profile" && (
         <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
           <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <div className="mb-4 flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-base font-black text-slate-950">{copy.profile.sectionTitle}</h2>
+                <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">{copy.profile.sectionSubtitle}</p>
+              </div>
+              <button
+                onClick={() => setShowAiOnboarding(true)}
+                className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 text-xs font-black text-slate-800 transition hover:bg-white"
+              >
+                <Sparkles size={15} />
+                {copy.aiOnboarding.open}
+              </button>
+            </div>
             <div className="grid gap-4 md:grid-cols-[168px_minmax(0,1fr)]">
               <div>
                 <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 text-center transition hover:border-slate-400">
@@ -583,6 +656,13 @@ export const SimpleStudio = ({
             <div className={cn("h-24 rounded-md bg-gradient-to-br", selectedTemplateDetails.swatch)} />
             <h2 className="mt-4 text-lg font-black text-slate-950">{selectedTemplateDetails.name}</h2>
             <p className="mt-1 text-sm font-semibold text-slate-500">{selectedTemplateCopy.role}</p>
+            <TemplateLivePreview
+              user={user}
+              projects={visibleProjects}
+              swatch={selectedTemplateDetails.swatch}
+              templateName={selectedTemplateDetails.name}
+              copy={copy}
+            />
             <div className="mt-5 grid gap-2">
               <button
                 onClick={onOpenPortfolio}
@@ -718,6 +798,99 @@ export const SimpleStudio = ({
           </div>
         </div>
       )}
+
+      {showAiOnboarding && (
+        <div className="fixed inset-0 z-50 flex items-end bg-slate-950/45 px-3 pb-3 pt-16 backdrop-blur-sm sm:items-center sm:justify-center sm:p-6">
+          <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-2xl shadow-slate-950/20">
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white p-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">{copy.aiOnboarding.title}</p>
+                <h2 className="mt-1 text-lg font-black text-slate-950">{copy.aiOnboarding.open}</h2>
+                <p className="mt-1 text-sm font-semibold leading-6 text-slate-500">{copy.aiOnboarding.subtitle}</p>
+              </div>
+              <button
+                onClick={() => setShowAiOnboarding(false)}
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-950"
+                aria-label={copy.aiOnboarding.cancel}
+              >
+                <X size={17} />
+              </button>
+            </div>
+
+            <div className="grid gap-3 p-4 sm:grid-cols-2">
+              <Field label={copy.aiOnboarding.role}>
+                <input
+                  value={aiDraft.role}
+                  onChange={(event) => updateAiDraft("role", event.target.value)}
+                  placeholder={copy.aiOnboarding.rolePlaceholder}
+                  className="input-surface"
+                />
+              </Field>
+              <Field label={copy.aiOnboarding.targetRole}>
+                <input
+                  value={aiDraft.targetRole}
+                  onChange={(event) => updateAiDraft("targetRole", event.target.value)}
+                  placeholder={copy.aiOnboarding.targetRolePlaceholder}
+                  className="input-surface"
+                />
+              </Field>
+              <Field label={copy.aiOnboarding.skills}>
+                <textarea
+                  value={aiDraft.skills}
+                  onChange={(event) => updateAiDraft("skills", event.target.value)}
+                  placeholder={copy.aiOnboarding.skillsPlaceholder}
+                  className="input-surface min-h-24 resize-none py-3"
+                />
+              </Field>
+              <Field label={copy.aiOnboarding.experience}>
+                <textarea
+                  value={aiDraft.experience}
+                  onChange={(event) => updateAiDraft("experience", event.target.value)}
+                  placeholder={copy.aiOnboarding.experiencePlaceholder}
+                  className="input-surface min-h-24 resize-none py-3"
+                />
+              </Field>
+              <div className="sm:col-span-2">
+                <Field label={copy.aiOnboarding.goal}>
+                  <input
+                    value={aiDraft.goal}
+                    onChange={(event) => updateAiDraft("goal", event.target.value)}
+                    placeholder={copy.aiOnboarding.goalPlaceholder}
+                    className="input-surface"
+                  />
+                </Field>
+              </div>
+              <div className="sm:col-span-2">
+                <Field label={copy.aiOnboarding.project}>
+                  <textarea
+                    value={aiDraft.project}
+                    onChange={(event) => updateAiDraft("project", event.target.value)}
+                    placeholder={copy.aiOnboarding.projectPlaceholder}
+                    className="input-surface min-h-24 resize-none py-3"
+                  />
+                </Field>
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 flex flex-col gap-2 border-t border-slate-200 bg-white p-4 sm:flex-row sm:justify-end">
+              <button
+                onClick={() => setShowAiOnboarding(false)}
+                className="inline-flex h-11 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:bg-slate-50"
+              >
+                {copy.aiOnboarding.cancel}
+              </button>
+              <button
+                onClick={applyAiOnboarding}
+                disabled={isImprovingProfile}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-slate-950 px-4 text-sm font-black text-white transition hover:bg-slate-800 disabled:opacity-60"
+              >
+                {isImprovingProfile ? <Loader2 size={17} className="animate-spin" /> : <Sparkles size={17} />}
+                {isImprovingProfile ? copy.aiOnboarding.generating : copy.aiOnboarding.apply}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };
@@ -728,6 +901,65 @@ const Field = ({ label, children }: { label: string; children: React.ReactNode }
     {children}
   </label>
 );
+
+const TemplateLivePreview = ({
+  user,
+  projects,
+  swatch,
+  templateName,
+  copy,
+}: {
+  user: User;
+  projects: Project[];
+  swatch: string;
+  templateName: string;
+  copy: ReturnType<typeof getAppCopy>["studio"];
+}) => {
+  const previewProject = projects[0];
+  const skills = previewProject?.tags?.slice(0, 3) || ["React", "TypeScript", "API"];
+
+  return (
+    <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{copy.templatePreview.title}</p>
+          <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">{copy.templatePreview.subtitle}</p>
+        </div>
+        <span className="rounded-md bg-white px-2 py-1 text-[10px] font-black text-slate-500 shadow-sm">{templateName}</span>
+      </div>
+      <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
+        <div className={cn("h-16 bg-gradient-to-br", swatch)} />
+        <div className="p-3">
+          <div className="mb-3 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-slate-950 text-sm font-black text-white">
+              {(user.fullName || copy.ready.candidateFallback).charAt(0)}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-black text-slate-950">{user.fullName || copy.ready.candidateFallback}</p>
+              <p className="truncate text-[11px] font-bold text-slate-500">{user.githubUsername ? `github.com/${user.githubUsername}` : copy.templatePreview.contact}</p>
+            </div>
+          </div>
+          <p className="line-clamp-3 text-xs font-semibold leading-5 text-slate-600">
+            {user.bio || copy.profile.bioPlaceholder}
+          </p>
+          <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-black text-slate-950">{previewProject?.title || copy.templatePreview.projectFallback}</p>
+            <p className="mt-1 line-clamp-2 text-[11px] font-semibold leading-5 text-slate-500">
+              {previewProject?.description || copy.templatePreview.noProjects}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {skills.map((skill) => (
+                <span key={skill} className="rounded bg-white px-2 py-1 text-[10px] font-bold text-slate-500">
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ProjectList = ({
   projects,

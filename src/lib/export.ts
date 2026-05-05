@@ -205,3 +205,228 @@ export const downloadResumePdf = async (user: User, resume: ResumeData, language
 
   doc.save(`${getResumeFileBaseName(user)}.pdf`);
 };
+
+const xmlEscape = (value: string) => (
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+);
+
+const crcTable = Array.from({ length: 256 }, (_, index) => {
+  let crc = index;
+  for (let bit = 0; bit < 8; bit += 1) {
+    crc = crc & 1 ? 0xedb88320 ^ (crc >>> 1) : crc >>> 1;
+  }
+  return crc >>> 0;
+});
+
+const crc32 = (bytes: Uint8Array) => {
+  let crc = 0xffffffff;
+  for (const byte of bytes) {
+    crc = crcTable[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+};
+
+const uint16 = (value: number) => {
+  const bytes = new Uint8Array(2);
+  new DataView(bytes.buffer).setUint16(0, value, true);
+  return bytes;
+};
+
+const uint32 = (value: number) => {
+  const bytes = new Uint8Array(4);
+  new DataView(bytes.buffer).setUint32(0, value, true);
+  return bytes;
+};
+
+const concatBytes = (parts: Uint8Array[]) => {
+  const total = parts.reduce((sum, part) => sum + part.length, 0);
+  const output = new Uint8Array(total);
+  let offset = 0;
+  for (const part of parts) {
+    output.set(part, offset);
+    offset += part.length;
+  }
+  return output;
+};
+
+const createStoredZip = (files: Array<{ path: string; content: string }>) => {
+  const encoder = new TextEncoder();
+  const localParts: Uint8Array[] = [];
+  const centralParts: Uint8Array[] = [];
+  let offset = 0;
+
+  for (const file of files) {
+    const nameBytes = encoder.encode(file.path);
+    const data = encoder.encode(file.content);
+    const crc = crc32(data);
+    const localHeader = concatBytes([
+      uint32(0x04034b50),
+      uint16(20),
+      uint16(0),
+      uint16(0),
+      uint16(0),
+      uint16(0),
+      uint32(crc),
+      uint32(data.length),
+      uint32(data.length),
+      uint16(nameBytes.length),
+      uint16(0),
+      nameBytes,
+    ]);
+
+    localParts.push(localHeader, data);
+
+    const centralHeader = concatBytes([
+      uint32(0x02014b50),
+      uint16(20),
+      uint16(20),
+      uint16(0),
+      uint16(0),
+      uint16(0),
+      uint16(0),
+      uint32(crc),
+      uint32(data.length),
+      uint32(data.length),
+      uint16(nameBytes.length),
+      uint16(0),
+      uint16(0),
+      uint16(0),
+      uint16(0),
+      uint32(0),
+      uint32(offset),
+      nameBytes,
+    ]);
+
+    centralParts.push(centralHeader);
+    offset += localHeader.length + data.length;
+  }
+
+  const centralDirectory = concatBytes(centralParts);
+  const localFiles = concatBytes(localParts);
+  const endRecord = concatBytes([
+    uint32(0x06054b50),
+    uint16(0),
+    uint16(0),
+    uint16(files.length),
+    uint16(files.length),
+    uint32(centralDirectory.length),
+    uint32(localFiles.length),
+    uint16(0),
+  ]);
+
+  return concatBytes([localFiles, centralDirectory, endRecord]);
+};
+
+const docxParagraph = (text: string, style?: 'Title' | 'Heading1') => `
+  <w:p>
+    ${style ? `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>` : ''}
+    <w:r><w:t xml:space="preserve">${xmlEscape(text)}</w:t></w:r>
+  </w:p>
+`;
+
+const docxBullet = (text: string) => docxParagraph(`- ${text}`);
+
+export const downloadResumeDocx = (user: User, resume: ResumeData, language: AppLanguage = 'uz') => {
+  const copy = EXPORT_COPY[language] || EXPORT_COPY.uz;
+  const paragraphs = [
+    docxParagraph(user.fullName || copy.fallbackName, 'Title'),
+    docxParagraph(resume.headline),
+    docxParagraph(resume.contactLinks.join(' | ') || copy.links),
+    docxParagraph(copy.summary, 'Heading1'),
+    docxParagraph(resume.summary),
+    docxParagraph(copy.skills, 'Heading1'),
+    docxParagraph(resume.skills.join(' / ')),
+    docxParagraph(copy.experience, 'Heading1'),
+    ...(resume.experience.length
+      ? resume.experience.flatMap((item) => [
+        docxParagraph(`${item.role} - ${item.company}`),
+        docxParagraph(`${item.startDate}${item.endDate ? ` - ${item.endDate}` : ''}`),
+        docxBullet(item.description),
+      ])
+      : [docxBullet(copy.emptyExperience)]),
+    docxParagraph(copy.projects, 'Heading1'),
+    ...(resume.projects.length
+      ? resume.projects.slice(0, 8).flatMap((project) => [
+        docxParagraph(project.title),
+        project.role ? docxParagraph(project.role) : '',
+        docxBullet(project.description),
+        project.impact ? docxBullet(`${copy.impact}: ${project.impact}`) : '',
+        project.tags.length ? docxBullet(`${copy.stack}: ${project.tags.join(', ')}`) : '',
+      ].filter(Boolean))
+      : [docxBullet(copy.emptyProjects)]),
+    docxParagraph(copy.education, 'Heading1'),
+    ...resume.education.map((item) => docxBullet(`${item.degree}, ${item.institution} (${item.gradYear})`)),
+    docxParagraph(copy.languages, 'Heading1'),
+    docxParagraph(resume.languages.join(', ')),
+  ];
+
+  const files = [
+    {
+      path: '[Content_Types].xml',
+      content: `<?xml version="1.0" encoding="UTF-8"?>
+        <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+          <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+          <Default Extension="xml" ContentType="application/xml"/>
+          <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+          <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
+        </Types>`,
+    },
+    {
+      path: '_rels/.rels',
+      content: `<?xml version="1.0" encoding="UTF-8"?>
+        <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+          <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+        </Relationships>`,
+    },
+    {
+      path: 'word/_rels/document.xml.rels',
+      content: `<?xml version="1.0" encoding="UTF-8"?>
+        <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+          <Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+        </Relationships>`,
+    },
+    {
+      path: 'word/styles.xml',
+      content: `<?xml version="1.0" encoding="UTF-8"?>
+        <w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+          <w:style w:type="paragraph" w:default="1" w:styleId="Normal">
+            <w:name w:val="Normal"/>
+            <w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="22"/></w:rPr>
+          </w:style>
+          <w:style w:type="paragraph" w:styleId="Title">
+            <w:name w:val="Title"/>
+            <w:rPr><w:b/><w:sz w:val="36"/></w:rPr>
+          </w:style>
+          <w:style w:type="paragraph" w:styleId="Heading1">
+            <w:name w:val="heading 1"/>
+            <w:rPr><w:b/><w:sz w:val="26"/></w:rPr>
+          </w:style>
+        </w:styles>`,
+    },
+    {
+      path: 'word/document.xml',
+      content: `<?xml version="1.0" encoding="UTF-8"?>
+        <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+          <w:body>
+            ${paragraphs.join('\n')}
+            <w:sectPr>
+              <w:pgSz w:w="11906" w:h="16838"/>
+              <w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="708" w:footer="708" w:gutter="0"/>
+            </w:sectPr>
+          </w:body>
+        </w:document>`,
+    },
+  ];
+
+  const zipBytes = createStoredZip(files);
+  downloadBlob(
+    new Blob([zipBytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }),
+    `${getResumeFileBaseName(user)}.docx`,
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  );
+};

@@ -2,6 +2,25 @@ import axios from "axios";
 import { buildResumeData } from "../lib/resume";
 import { AppLanguage, Project, User } from "../types";
 
+export type AiProfileAnswers = {
+  role: string;
+  experience: string;
+  skills: string;
+  goal: string;
+  targetRole: string;
+  project: string;
+};
+
+export type AiProfileResult = {
+  bio: string;
+  experienceSummary: string;
+  projectTitle?: string;
+  projectDescription?: string;
+  projectImpact?: string;
+  projectRole?: string;
+  tags?: string[];
+};
+
 const fallbackTips: Record<AppLanguage, string[]> = {
   uz: [
     "Bio matnini natijaga yo'naltiring: tajriba, kuchli soha va biznes qiymatini bir jumlada ayting.",
@@ -96,6 +115,52 @@ const generateTailoredFallbackCv = (
   return `${baseCv}\n\n## Target role alignment\n- Vakansiya keywordlari: ${keywords.join(", ") || "asosiy texnologiyalar"}.\n- Summary va project bulletlarda aynan vakansiyadagi texnologiya, impact va ownership signallarini kuchaytirish tavsiya qilinadi.\n- Mavjud bo'lmagan tajriba yoki kompaniya nomlarini qo'shmang; faqat real project dalillarini kuchaytiring.`;
 };
 
+const PROFILE_FALLBACK_COPY = {
+  uz: {
+    bio: (role: string, skills: string, goal: string) => `${role || "Developer"} sifatida ${skills || "zamonaviy web texnologiyalar"} yordamida biznes muammolarini ishonchli raqamli yechimlarga aylantiraman.${goal ? ` Asosiy maqsadim: ${goal}.` : ""}`,
+    experience: (experience: string, targetRole: string) => `${experience || "Amaliy loyihalar orqali real product development tajribasiga egaman."}${targetRole ? ` CV ${targetRole} roli uchun moslab tayyorlanmoqda.` : ""}`,
+    projectTitle: "Professional portfolio loyihasi",
+    projectDescription: (project: string) => project || "Foydalanuvchi ma'lumotlari asosida portfolio va CV yaratadigan web ilova.",
+    projectImpact: "Profil, loyiha va CV ma'lumotlarini bitta tartibli professional oqimga yig'adi.",
+  },
+  en: {
+    bio: (role: string, skills: string, goal: string) => `As a ${role || "Developer"}, I use ${skills || "modern web technologies"} to turn business problems into reliable digital products.${goal ? ` My current goal is ${goal}.` : ""}`,
+    experience: (experience: string, targetRole: string) => `${experience || "I have hands-on experience building practical product features through real projects."}${targetRole ? ` This CV is tailored toward a ${targetRole} role.` : ""}`,
+    projectTitle: "Professional portfolio project",
+    projectDescription: (project: string) => project || "A web app that creates a portfolio and CV from structured user data.",
+    projectImpact: "Combines profile, project, and resume data into one polished professional workflow.",
+  },
+  ru: {
+    bio: (role: string, skills: string, goal: string) => `Как ${role || "разработчик"}, я использую ${skills || "современные web-технологии"}, чтобы превращать бизнес-задачи в надежные цифровые продукты.${goal ? ` Текущая цель: ${goal}.` : ""}`,
+    experience: (experience: string, targetRole: string) => `${experience || "У меня есть практический опыт разработки продуктовых функций на реальных проектах."}${targetRole ? ` CV адаптируется под роль ${targetRole}.` : ""}`,
+    projectTitle: "Профессиональный portfolio-проект",
+    projectDescription: (project: string) => project || "Web-приложение, которое создает portfolio и CV из структурированных данных пользователя.",
+    projectImpact: "Объединяет профиль, проекты и CV в один аккуратный профессиональный workflow.",
+  },
+};
+
+const buildProfileFallback = (
+  answers: AiProfileAnswers,
+  language: AppLanguage,
+): AiProfileResult => {
+  const copy = PROFILE_FALLBACK_COPY[language] || PROFILE_FALLBACK_COPY.uz;
+  const tags = answers.skills
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 8);
+
+  return {
+    bio: copy.bio(answers.role.trim(), answers.skills.trim(), answers.goal.trim()),
+    experienceSummary: copy.experience(answers.experience.trim(), answers.targetRole.trim()),
+    projectTitle: answers.project.trim() ? copy.projectTitle : undefined,
+    projectDescription: answers.project.trim() ? copy.projectDescription(answers.project.trim()) : undefined,
+    projectImpact: answers.project.trim() ? copy.projectImpact : undefined,
+    projectRole: answers.targetRole.trim() || answers.role.trim() || "Developer",
+    tags: tags.length ? tags : ["React", "TypeScript", "Product Thinking"],
+  };
+};
+
 export const getPortfolioRecommendations = async (
   user: User,
   projects: Project[],
@@ -107,6 +172,22 @@ export const getPortfolioRecommendations = async (
   } catch (error) {
     console.error("AI Error:", error);
     return fallbackTips[language];
+  }
+};
+
+export const improveProfileWithAI = async (
+  answers: AiProfileAnswers,
+  user: User,
+  projects: Project[],
+  language: AppLanguage = "uz",
+): Promise<AiProfileResult> => {
+  try {
+    const visibleProjects = projects.filter((project) => project.isPublic !== false);
+    const response = await axios.post("/api/ai/profile", { answers, user, projects: visibleProjects, language });
+    return response.data?.profile || buildProfileFallback(answers, language);
+  } catch (error) {
+    console.error("Profile AI Error:", error);
+    return buildProfileFallback(answers, language);
   }
 };
 

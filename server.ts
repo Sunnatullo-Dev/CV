@@ -32,6 +32,15 @@ type StoredPortfolio = {
 
 type PortfolioStore = Record<string, StoredPortfolio>;
 
+type AiProfileAnswers = {
+  role?: string;
+  experience?: string;
+  skills?: string;
+  goal?: string;
+  targetRole?: string;
+  project?: string;
+};
+
 const readPortfolioStore = async (): Promise<PortfolioStore> => {
   try {
     const raw = await fs.readFile(PORTFOLIOS_FILE, "utf8");
@@ -152,6 +161,67 @@ const fallbackCvCopy: Record<AppLanguage, {
   },
 };
 
+const profileFallbackCopy: Record<AppLanguage, {
+  bio: (role: string, skills: string, goal: string) => string;
+  experience: (experience: string, targetRole: string) => string;
+  projectTitle: string;
+  projectDescription: (project: string) => string;
+  projectImpact: string;
+}> = {
+  uz: {
+    bio: (role, skills, goal) => `${role || "Developer"} sifatida ${skills || "zamonaviy web texnologiyalar"} yordamida biznes muammolarini ishonchli raqamli yechimlarga aylantiraman.${goal ? ` Asosiy maqsadim: ${goal}.` : ""}`,
+    experience: (experience, targetRole) => `${experience || "Amaliy loyihalar orqali real product development tajribasiga egaman."}${targetRole ? ` CV ${targetRole} roli uchun moslab tayyorlanmoqda.` : ""}`,
+    projectTitle: "Professional portfolio loyihasi",
+    projectDescription: (project) => project || "Foydalanuvchi ma'lumotlari asosida portfolio va CV yaratadigan web ilova.",
+    projectImpact: "Profil, loyiha va CV ma'lumotlarini bitta tartibli professional oqimga yig'adi.",
+  },
+  en: {
+    bio: (role, skills, goal) => `As a ${role || "Developer"}, I use ${skills || "modern web technologies"} to turn business problems into reliable digital products.${goal ? ` My current goal is ${goal}.` : ""}`,
+    experience: (experience, targetRole) => `${experience || "I have hands-on experience building practical product features through real projects."}${targetRole ? ` This CV is tailored toward a ${targetRole} role.` : ""}`,
+    projectTitle: "Professional portfolio project",
+    projectDescription: (project) => project || "A web app that creates a portfolio and CV from structured user data.",
+    projectImpact: "Combines profile, project, and resume data into one polished professional workflow.",
+  },
+  ru: {
+    bio: (role, skills, goal) => `Как ${role || "разработчик"}, я использую ${skills || "современные web-технологии"}, чтобы превращать бизнес-задачи в надежные цифровые продукты.${goal ? ` Текущая цель: ${goal}.` : ""}`,
+    experience: (experience, targetRole) => `${experience || "У меня есть практический опыт разработки продуктовых функций на реальных проектах."}${targetRole ? ` CV адаптируется под роль ${targetRole}.` : ""}`,
+    projectTitle: "Профессиональный portfolio-проект",
+    projectDescription: (project) => project || "Web-приложение, которое создает portfolio и CV из структурированных данных пользователя.",
+    projectImpact: "Объединяет профиль, проекты и CV в один аккуратный профессиональный workflow.",
+  },
+};
+
+const buildProfileFallback = (answers: AiProfileAnswers, language: AppLanguage) => {
+  const copy = profileFallbackCopy[language] || profileFallbackCopy.uz;
+  const role = String(answers.role || "").trim();
+  const skills = String(answers.skills || "").trim();
+  const goal = String(answers.goal || "").trim();
+  const experience = String(answers.experience || "").trim();
+  const targetRole = String(answers.targetRole || "").trim();
+  const project = String(answers.project || "").trim();
+  const tags = skills
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 8);
+
+  return {
+    bio: copy.bio(role, skills, goal),
+    experienceSummary: copy.experience(experience, targetRole),
+    projectTitle: project ? copy.projectTitle : "",
+    projectDescription: project ? copy.projectDescription(project) : "",
+    projectImpact: project ? copy.projectImpact : "",
+    projectRole: targetRole || role || "Developer",
+    tags: tags.length ? tags : ["React", "TypeScript", "Product Thinking"],
+  };
+};
+
+const parseJsonObject = (text: string) => {
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) return null;
+  return JSON.parse(match[0]) as Record<string, unknown>;
+};
+
 const buildFallbackCv = (user: User, projects: Project[], language: AppLanguage) => {
   const resume = buildResumeData(user, projects, language);
   const copy = fallbackCvCopy[language] || fallbackCvCopy.uz;
@@ -262,6 +332,59 @@ async function startServer() {
       res.json({ tips, source: "gemini" });
     } catch (error) {
       res.json({ tips: fallbackTips[language], source: "fallback" });
+    }
+  });
+
+  app.post("/api/ai/profile", async (req, res) => {
+    const { user, projects, language } = getResumeInput(req.body);
+    const answers = (req.body.answers || {}) as AiProfileAnswers;
+    const fallback = buildProfileFallback(answers, language);
+    const ai = getAiClient();
+
+    if (!ai) return res.json({ profile: fallback, source: "fallback" });
+
+    try {
+      const response = await ai.models.generateContent({
+        model: AI_MODEL,
+        contents: `
+          Sen professional CV copywriter va recruiter maslahatchisisan.
+          Foydalanuvchining qisqa javoblari asosida bio, tajriba summary va ixtiyoriy loyiha tavsifini yoz.
+
+          Qoidalar:
+          - Faqat JSON object qaytar.
+          - Mavjud bo'lmagan kompaniya, universitet, yil yoki sertifikat o'ylab topma.
+          - Bio 2-3 jumla, aniq va rekruterga tayyor bo'lsin.
+          - experienceSummary real javoblarga tayansin.
+          - projectTitle/projectDescription/projectImpact faqat asosiy loyiha haqida yetarli ma'lumot bo'lsa qaytar.
+          - tags massiv bo'lsin.
+          - Matn ${CV_LANGUAGE_NAMES[language]} tilida bo'lsin.
+
+          JSON schema:
+          {
+            "bio": "string",
+            "experienceSummary": "string",
+            "projectTitle": "string",
+            "projectDescription": "string",
+            "projectImpact": "string",
+            "projectRole": "string",
+            "tags": ["string"]
+          }
+
+          User:
+          ${JSON.stringify(user, null, 2)}
+
+          Existing projects:
+          ${JSON.stringify(projects.slice(0, 5), null, 2)}
+
+          Answers:
+          ${JSON.stringify(answers, null, 2)}
+        `,
+      });
+
+      const parsed = response.text ? parseJsonObject(response.text) : null;
+      res.json({ profile: parsed ? { ...fallback, ...parsed } : fallback, source: parsed ? "gemini" : "fallback" });
+    } catch (error) {
+      res.json({ profile: fallback, source: "fallback" });
     }
   });
 
